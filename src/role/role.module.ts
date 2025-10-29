@@ -21,7 +21,7 @@ import { NestLoggerAdapter, SecurityModule } from 'libs/infraestructure/src';
     },
     {
       provide: 'LoggerService', 
-      useFactory: () => new NestLoggerAdapter(RoleMongoRepository.name)
+      useFactory: () => new NestLoggerAdapter(RoleService.name)
     }
   ],
   controllers: [RoleController],

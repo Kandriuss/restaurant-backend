@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JwtAdapterService } from '../adapters';
-import { JwtAuthGuard } from './guards';
+import { JwtAuthGuard, RolesGuard } from './guards';
 import { NestLoggerAdapter } from '../logger';
 
 @Module({
@@ -16,11 +16,13 @@ import { NestLoggerAdapter } from '../logger';
       provide: 'LoggerService',
       useFactory: () => new NestLoggerAdapter('SecurityModule')
     },
-    JwtAuthGuard
+    JwtAuthGuard,
+    RolesGuard
   ],
   exports: [
     'JwtAdapterService',
-    JwtAuthGuard
+    JwtAuthGuard,
+    RolesGuard
   ]
 })
 export class SecurityModule {}

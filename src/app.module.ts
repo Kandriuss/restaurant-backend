@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { SecurityModule } from 'libs/infraestructure/src/security';
 import { UserModule } from 'src/user/user.module';
 import { RoleModule } from 'src/role/role.module';
+import { DishModule } from 'src/dish/dish.module';
 
 @Module({
   imports: [
@@ -17,10 +18,12 @@ import { RoleModule } from 'src/role/role.module';
     }),
     //Configuración de base de datos
     DatabaseModule,
+    //Configuración de modulos
     AuthModule,
     SecurityModule,
     RoleModule,
     UserModule,
+    DishModule,
   ],
   controllers: [],
   providers: [],

@@ -15,7 +15,6 @@ export class RoleController {
     @Roles(ERole.ADMIN)
     @Post('')
     async create(@Body() role: RoleInput){
-        console.log('BODY RECIBIDO', role);
         return await this.roleService.create(role);
     }
 
