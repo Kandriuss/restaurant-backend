@@ -45,4 +45,14 @@ export class DishMongoRepository implements IDishRepository {
             throw new InternalServerErrorException('Error interno al crear el plato');
         }
     }
+
+    async findAll(): Promise<IDish[]> {
+        try {
+            const dishes = await this.dishModel.find();
+            return dishes as IDish[];
+        } catch (error) {
+            this.logger.error('Error técnico al obtener los platos', error?.stack);
+            throw new InternalServerErrorException('Error interno al obtener los platos');
+        }
+    }
 }

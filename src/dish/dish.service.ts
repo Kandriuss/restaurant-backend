@@ -15,4 +15,8 @@ export class DishService {
     async create(dish: DishInput): Promise<IDish | void> {
         return await this.dishRepository.create(dish);
     }
+
+    async findAll(): Promise<IDish[]> {
+        return await this.dishRepository.findAll();
+    }
 }
