@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtAdapterService } from '../adapters';
 import { JwtAuthGuard, RolesGuard } from './guards';
-import { NestLoggerAdapter } from '../logger';
+import { NestLoggerAdapter } from '../adapters/logger';
 
 @Module({
   providers: [

@@ -1,4 +1,4 @@
 export * from './database';
-export * from './logger';
+export * from './adapters/logger';
 export * from './security';
 export * from './adapters';

@@ -1,7 +1,8 @@
 import { Inject, Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
-import  type { IDishRepository } from "./domain/interface/dish.ainterface.repository";
-import  type { DishInput, ILogger } from "libs/domain/src";
-import { IDish } from "./domain/interface/dish.interface";
+import  type { IDishPatch, IDishRepository } from "./domain/interface";
+import  type { DishInput, PatchDishInput, ILogger } from "libs/domain/src";
+import { IDish } from "./domain/interface";
+import { ErrorAdapter } from "libs/infraestructure/src";
 
 @Injectable()
 export class DishService {
@@ -20,7 +21,6 @@ export class DishService {
         return await this.dishRepository.findAll();
     }
 
-    
     async findById(id: string): Promise<IDish> {
         try {
           const dish = await this.dishRepository.findById(id);
@@ -46,4 +46,21 @@ export class DishService {
           throw new InternalServerErrorException('Error interno del servidor');
         }
     }
+
+    async update(id: string, dish: PatchDishInput): Promise<IDishPatch> {
+      try {
+
+        const updatedDish = await this.dishRepository.update(id, dish);
+  
+        if (!updatedDish) {
+          this.logger.warn(`Plato con ID ${id} no encontrado`);
+          throw new NotFoundException(`Plato con el ID ${id} no encontrado`);
+        };
+  
+        return updatedDish;
+
+      } catch (error) {
+        ErrorAdapter.handle(error, `actualizar el plato con ID ${id}`);
+      };
+    };
 }

@@ -21,6 +21,14 @@ services:
       - .env.local
     depends_on:
       - mongo
+    volumes:
+      # Montar el código fuente para hot reload (excluyendo node_modules)
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+      - /usr/src/app/dist
+    # Mantener el contenedor corriendo
+    stdin_open: true
+    tty: true
 
 volumes:
   mongo_data:

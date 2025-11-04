@@ -1,11 +1,11 @@
-import {Injectable, Inject, BadRequestException, InternalServerErrorException} from "@nestjs/common";
+import {Injectable, Inject, BadRequestException, InternalServerErrorException, NotFoundException} from "@nestjs/common";
 import {InjectModel} from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import { DishInput, Dishes } from "libs/domain/src";
+import { DishInput, Dishes, PatchDishInput } from "libs/domain/src";
 import type { ILogger } from 'libs/domain/src'
-import { IDishRepository } from "src/dish/domain/interface/dish.ainterface.repository";
-import { IDish } from "src/dish/domain/interface/dish.interface";
+import { IDishRepository, IDishPatch } from "src/dish/domain/interface";
+import { IDish } from "src/dish/domain/interface";
 
 const COLLECTION_NAME = 'dishes';
 
@@ -66,4 +66,29 @@ export class DishMongoRepository implements IDishRepository {
           throw new Error('DATABASE_ERROR');
         }
     }
+
+    async update(id: string, dish: PatchDishInput): Promise<IDishPatch | null> {
+        try {
+           const existingDish = await this.dishModel.findOne({ id });
+
+           if (!existingDish) {
+                this.logger.warn(`Intento de actualizar plato inexistente con ID: ${id}`);
+                return null;
+           };
+
+           const updateDish = await this.dishModel.findOneAndUpdate(
+            { id },
+            { ...dish },
+            { new: true }
+           ).exec();
+
+           this.logger.log(`Plato actualizado exitosamente con ID: ${id}`);
+
+           return updateDish as IDishPatch;
+
+        } catch (error) {
+            this.logger.error(`Error al actualizar el plato: ${id}`, error?.stack);
+            throw new Error('DATABASE_ERROR');
+        };
+    };
 }
