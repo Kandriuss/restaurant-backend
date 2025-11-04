@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body } from "@nestjs/common";
+import { Controller, Post, Get, Body, Param } from "@nestjs/common";
 import { DishService } from "./dish.service";
 import { DishZ } from "libs/domain/src";
 import { ZodValidationPipe } from "libs/application/src/pipes";
@@ -17,5 +17,11 @@ export class DishController {
     @Get('')
     async findAll(): Promise<IDish[]> {
         return await this.dishService.findAll();
+    }
+
+    @Get(':id')
+    async findById(
+        @Param('id') id: string): Promise<IDish> {
+        return await this.dishService.findById(id);
     }
 }

@@ -55,4 +55,15 @@ export class DishMongoRepository implements IDishRepository {
             throw new InternalServerErrorException('Error interno al obtener los platos');
         }
     }
+
+    async findById(id: string): Promise<IDish | void> {
+        try {
+          const dish = await this.dishModel.findOne({ id }).exec();
+          this.logger.log(`findById ejecutado con id=${id}`);
+          return dish as IDish;
+        } catch (error) {
+          this.logger.error(`Error al acceder a la base de datos: ${error.message}`);
+          throw new Error('DATABASE_ERROR');
+        }
+    }
 }
