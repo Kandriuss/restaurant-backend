@@ -43,8 +43,8 @@ export class DishMongoRepository implements IDishRepository {
             // Para errores técnicos de la base de datos, logueamos y lanzamos excepción genérica
             this.logger.error(`Error técnico al crear el plato: ${dish?.name ?? 'desconocido'}`, error?.stack);
             throw new InternalServerErrorException('Error interno al crear el plato');
-        }
-    }
+        };
+    };
 
     async findAll(): Promise<IDish[]> {
         try {
@@ -54,7 +54,7 @@ export class DishMongoRepository implements IDishRepository {
             this.logger.error('Error técnico al obtener los platos', error?.stack);
             throw new InternalServerErrorException('Error interno al obtener los platos');
         }
-    }
+    };
 
     async findById(id: string): Promise<IDish | void> {
         try {
@@ -65,15 +65,13 @@ export class DishMongoRepository implements IDishRepository {
           this.logger.error(`Error al acceder a la base de datos: ${error.message}`);
           throw new Error('DATABASE_ERROR');
         }
-    }
-
-    async update(id: string, dish: PatchDishInput): Promise<IDishPatch | null> {
+    };
+    async update(id: string, dish: PatchDishInput): Promise<IDishPatch> {
         try {
            const existingDish = await this.dishModel.findOne({ id });
 
            if (!existingDish) {
                 this.logger.warn(`Intento de actualizar plato inexistente con ID: ${id}`);
-                return null;
            };
 
            const updateDish = await this.dishModel.findOneAndUpdate(
@@ -88,6 +86,19 @@ export class DishMongoRepository implements IDishRepository {
 
         } catch (error) {
             this.logger.error(`Error al actualizar el plato: ${id}`, error?.stack);
+            throw new Error('DATABASE_ERROR');
+        };
+    };
+
+    async delete(id: string): Promise<boolean>{
+        try {
+            const result = await this.dishModel.deleteOne({ id }).exec();
+
+            this.logger.log(`Plato eliminado exitosamente con ID: ${id}`);
+            
+            return result.deletedCount > 0;
+        }catch (error){
+            this.logger.error(`Error al eliminar el plato: ${id}`, error?.stack);
             throw new Error('DATABASE_ERROR');
         };
     };

@@ -15,11 +15,11 @@ export class DishService {
 
     async create(dish: DishInput): Promise<IDish | void> {
         return await this.dishRepository.create(dish);
-    }
+    };
 
     async findAll(): Promise<IDish[]> { 
         return await this.dishRepository.findAll();
-    }
+    };
 
     async findById(id: string): Promise<IDish> {
         try {
@@ -44,8 +44,8 @@ export class DishService {
     
           this.logger.error(`Error inesperado al obtener el plato con ID: ${id}`, error.stack);
           throw new InternalServerErrorException('Error interno del servidor');
-        }
-    }
+        };
+    };
 
     async update(id: string, dish: PatchDishInput): Promise<IDishPatch> {
       try {
@@ -63,4 +63,25 @@ export class DishService {
         ErrorAdapter.handle(error, `actualizar el plato con ID ${id}`);
       };
     };
+    async delete(id: string): Promise<{ message: string }> {
+      try {
+        const existingDish = await this.dishRepository.findById(id);
+    
+        if (!existingDish) {
+          this.logger.warn(`Plato con ID ${id} no encontrado`);
+          throw new NotFoundException(`Plato con el ID ${id} no encontrado`);
+        }
+    
+        const deleted = await this.dishRepository.delete(id);
+        if (!deleted) {
+          throw new NotFoundException(`No se pudo eliminar el plato con ID ${id}`);
+        }
+    
+        this.logger.log(`Plato con ID ${id} eliminado exitosamente`);
+        return { message: 'Plato eliminado exitosamente' };
+      } catch (error) {
+        ErrorAdapter.handle(error, `eliminar el plato con ID ${id}`);
+      }
+    }
+    
 }

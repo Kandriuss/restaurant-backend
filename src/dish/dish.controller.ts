@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Patch, Param } from "@nestjs/common";
+import { Controller, Post, Get, Body, Patch, Delete, Param } from "@nestjs/common";
 import { DishService } from "./dish.service";
 import { DishZ, DishPatchZ } from "libs/domain/src";
 import type { PatchDishInput } from "libs/domain/src";
@@ -13,18 +13,18 @@ export class DishController {
     @Post('')
     async create(@Body(new ZodValidationPipe(DishZ)) dish: z.infer<typeof DishZ>){
         return await this.dishService.create(dish);
-    }
+    };
 
     @Get('')
     async findAll(): Promise<IDish[]> {
         return await this.dishService.findAll();
-    }
+    };
 
     @Get(':id')
     async findById(
         @Param('id') id: string): Promise<IDish> {
         return await this.dishService.findById(id);
-    }
+    };
     
     @Patch(':id')
     async update(
@@ -32,5 +32,10 @@ export class DishController {
         @Body(new ZodValidationPipe(DishPatchZ)) dish: z.infer<typeof DishPatchZ>
     ){
         return await this.dishService.update(id, dish);
-    }
+    };
+
+    @Delete(':id')
+    async delete(@Param('id') id: string){
+        return await this.dishService.delete(id);
+    };
 }

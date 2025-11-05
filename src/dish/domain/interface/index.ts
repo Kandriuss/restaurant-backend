@@ -1,3 +1,3 @@
 export * from './dish.interface';
 export * from './dish-patch.interface';
-export * from './dish.ainterface.repository';
+export * from './dish.interface.repository';
