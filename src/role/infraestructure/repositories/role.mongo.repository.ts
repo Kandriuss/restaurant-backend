@@ -20,10 +20,12 @@ export class RoleMongoRepository implements IRoleRespository {
         try {
             const id = uuidv4();
             const existingRole = await this.roleModel.findOne({ code: role.code})
+
             if (existingRole){
                 this.logger.warn(`Intento de crear rol con código duplicado: ${role.code}`);
-                throw new BadRequestException(`El code ${role.code} ya existe`)
-            }
+                return undefined;
+            };
+
             const newRole = new this.roleModel({
                 ...role,
                 id,
@@ -31,7 +33,9 @@ export class RoleMongoRepository implements IRoleRespository {
             });
             
             await newRole.save();
+
             this.logger.log(`Rol creado exitosamente con ID: ${id} y código: ${role.code}`);
+
             return newRole as IRole;
 
         } catch (error) {
@@ -43,7 +47,9 @@ export class RoleMongoRepository implements IRoleRespository {
     async findAll(): Promise<IRole[]> {
         try {
             const roles = await this.roleModel.find().exec();
+
             this.logger.log(`Se encontraron ${roles.length} roles`);
+
             return roles as IRole[];
         } catch (error) {
             this.logger.error('Error al obtener todos los roles', error.stack);
@@ -89,20 +95,20 @@ export class RoleMongoRepository implements IRoleRespository {
         };
     };
 
-    async update(id: string, role: PatchRoleInput): Promise<IRole> {
+    async update(id: string, role: PatchRoleInput): Promise<IRole | undefined> {
         try {
             const existingRole = await this.roleModel.findOne({ id });
 
             if (!existingRole) {
                 this.logger.warn(`Intento de actualizar rol inexistente con ID: ${id}`);
-                throw new NotFoundException(`Rol con ID ${id} no encontrado`);
+                return undefined;
             };
 
             if (role.code && role.code !== existingRole.code) {
                 const duplicateCode = await this.roleModel.findOne({ code: role.code });
                 if (duplicateCode) {
                     this.logger.warn(`Intento de actualizar rol con código duplicado: ${role.code}`);
-                    throw new BadRequestException(`El código ${role.code} ya existe`);
+                    throw new Error('ROLE_CODE_ALREADY_EXISTS');
                 };
             };
 
@@ -115,12 +121,17 @@ export class RoleMongoRepository implements IRoleRespository {
             this.logger.log(`Rol actualizado exitosamente con ID: ${id}`);
 
             return updatedRole as IRole;
-
-        } catch (error) {
-            this.logger.error(`Error al actualizar el rol con ID: ${id}`, error.stack);
+        } catch (error) { 
+            if (error instanceof Error && error.message === 'ROLE_CODE_ALREADY_EXISTS') {
+                throw error;
+            }
+            this.logger.error(
+                `Error al actualizar el rol con ID: ${id}`,
+                error instanceof Error ? error.stack : undefined,
+            );
             throw new Error('DATABASE_ERROR');
-        }
-    }
+        };
+    };
 
     async delete(id: string): Promise<void> {
         try {

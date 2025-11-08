@@ -4,14 +4,15 @@ import { DishZ, DishPatchZ } from "libs/domain/src";
 import type { PatchDishInput } from "libs/domain/src";
 import { ZodValidationPipe } from "libs/application/src/pipes";
 import { z } from "zod";
-import { IDish } from "./domain/interface/dish.interface";
+import { IDish } from "../../libs/domain/src/interfaces/dish/dish.interface";
 
 @Controller('dishes')
 export class DishController {
     constructor(private readonly dishService: DishService) {}
 
     @Post('')
-    async create(@Body(new ZodValidationPipe(DishZ)) dish: z.infer<typeof DishZ>){
+    async create(
+        @Body(new ZodValidationPipe(DishZ)) dish: z.infer<typeof DishZ>){
         return await this.dishService.create(dish);
     };
 
@@ -22,7 +23,7 @@ export class DishController {
 
     @Get(':id')
     async findById(
-        @Param('id') id: string): Promise<IDish> {
+        @Param('id') id: string): Promise<IDish | null> {
         return await this.dishService.findById(id);
     };
     

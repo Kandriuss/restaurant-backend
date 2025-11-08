@@ -1,5 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { NotFoundException, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, InternalServerErrorException, BadRequestException } from '@nestjs/common';
 import type { IRoleRespository } from './domain';
 import {RoleInput, PatchRoleInput, IRole} from '../../libs/domain/src';
 import type {ILogger} from '../../libs/domain/src';
@@ -89,17 +88,22 @@ export class RoleService {
             throw new InternalServerErrorException('Error interno del servidor');
         };
     };
-    async update(id: string, role: PatchRoleInput): Promise<IRole | void> {
+    async update(id: string, role: PatchRoleInput): Promise<IRole> {
         try{
-            const existingRole = await this.roleRepository.findById(id);
+            const updatedRole = await this.roleRepository.update(id, role);
 
-            if (!existingRole){
+            if (!updatedRole) {
                 throw new NotFoundException(`Rol con el ID ${id} no encontrado`);
             };
-
-            return await this.roleRepository.update(id, role);
-
+            
+            this.logger.log(`Rol actualizado exitosamente con ID: ${id}`);
+            return updatedRole as IRole;
+            
         }catch (error) {
+           if (error instanceof Error && error.message === 'ROLE_CODE_ALREADY_EXISTS') {
+            this.logger.warn(`Intento de actualizar rol con código duplicado: ${role.code}`);
+            throw new BadRequestException(`El código ${role.code} ya existe`);
+           };
            if (error.message === 'DATABASE_ERROR') {
             this.logger.error(`Error de base de datos al actualizar el rol con ID: ${id}`);
             throw new InternalServerErrorException('Error interno del servidor');

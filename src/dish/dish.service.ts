@@ -1,4 +1,4 @@
-import { Inject, Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
+import { ConflictException, Inject, Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
 import  type { IDishPatch, IDishRepository } from "./domain/interface";
 import  type { DishInput, PatchDishInput, ILogger } from "libs/domain/src";
 import { IDish } from "./domain/interface";
@@ -13,12 +13,18 @@ export class DishService {
         private readonly logger: ILogger
     ){}
 
-    async create(dish: DishInput): Promise<IDish | void> {
+    async create(dish: DishInput): Promise<IDish> {
       try {
+        const createdDish = await this.dishRepository.create(dish);
         this.logger.log('Plato creado exitosamente');
 
-        return await this.dishRepository.create(dish);
+        return createdDish as IDish;
       } catch (error) {
+        if (error.message === 'DUPLICATE_ENTRY') {
+          this.logger.warn(`Intento de crear plato duplicado`);
+          throw new ConflictException('Ya existe un plato con ese nombre');
+        };
+
         if (error.message === 'DATABASE_ERROR') {
           this.logger.error(`Error de base de datos al crear el plato`);
           throw new InternalServerErrorException('Error interno del servidor');
@@ -50,7 +56,7 @@ export class DishService {
       };
     };
   
-    async findById(id: string): Promise<IDish> {
+    async findById(id: string): Promise<IDish | null> {
         try {
           const dish = await this.dishRepository.findById(id);
 
@@ -78,7 +84,6 @@ export class DishService {
 
     async update(id: string, dish: PatchDishInput): Promise<IDishPatch> {
       try {
-
         const updatedDish = await this.dishRepository.update(id, dish);
   
         if (!updatedDish) {
@@ -100,6 +105,7 @@ export class DishService {
         throw new InternalServerErrorException('Error interno del servidor');
       };
     };
+
     async delete(id: string): Promise<{ message: string }> {
       try {
         const existingDish = await this.dishRepository.findById(id);
@@ -126,6 +132,6 @@ export class DishService {
         };
         this.logger.error(`Error inesperado al eliminar el plato con ID: ${id}`, error.stack);
         throw new InternalServerErrorException('Error interno del servidor');
-      }
+      };
     };
 }

@@ -16,34 +16,28 @@ export class UserMongoRepository implements IUserRepository{
         @Inject('LoggerService') private readonly logger: ILogger,
     ){}
 
-    //Crear usuario 
     async create(user: UserInput, roleCode: string): Promise<IUser> {
         try {
-            //Validar usuario con Zod 
             const validateUser = validateUserInput(user);
             const id = uuidv4();
             
-            // Validar que el email no exista
             const existingEmail = await this.userModel.findOne({ email: validateUser.email });
+
             if (existingEmail) {
                 this.logger.warn(`Intento de crear email ${validateUser.email} duplicado`);
-                throw new BadRequestException(`El email ${validateUser.email} ya existe en el sistema`);
-            }
+                throw new Error('DUPLICATE_ENTRY_EMAIL');
+            };
 
-            // Validar que el RUT no exista
             const existingRut = await this.userModel.findOne({ rut: validateUser.rut });
             if (existingRut) {
                 this.logger.warn(`Intento de crear RUT ${validateUser.rut} duplicado`);
-                throw new BadRequestException(`El RUT ${validateUser.rut} ya existe en el sistema`);
-            }
-    
-            // Hashear la contraseña
+                throw new Error('DUPLICATE_ENTRY_RUT');
+            };
+
             const hashedPassword = await PasswordUtil.hash(user.password);
-    
-            // Rol por defecto si no se envía (registro web)
+
             const assignedRole = roleCode ?? ERole.CLIENT; 
 
-            // Crear nuevo usuario con rol por defecto
             const newUser = new this.userModel({
                 ...user,
                 id,
@@ -53,23 +47,23 @@ export class UserMongoRepository implements IUserRepository{
                 createdAt: new Date(),
                 updatedAt: new Date(),
             });
-    
-            // Guardar el usuario
-            await newUser.save();
-            this.logger.log(`Usuario creado exitosamente con email ${user.email} y ID ${id}`);
-            return newUser as IUser;
-    
-        } catch (error) {
-            if (error instanceof BadRequestException) {
-                throw error;
-            }
-            this.logger.error(`Error al crear usuario: ${error.message || error}`);
-            // Lanza el error para que el controlador o servicio superior lo maneje
-            throw error instanceof BadRequestException ? error : new InternalServerErrorException('Error interno al crear el usuario');
-        }
-    }
 
-    //Acceder a todos los usuarios 
+            await newUser.save();
+
+            this.logger.log(`Usuario creado exitosamente con email ${user.email} y ID ${id}`);
+
+            return newUser as IUser;
+
+        } catch (error) {
+            if (error.message === 'DUPLICATE_ENTRY_EMAIL') throw error;
+
+            if (error.message === 'DUPLICATE_ENTRY_RUT') throw error;
+
+            this.logger.error(`Error técnico al crear el usuario: ${user?.email ?? 'desconocido'}`, error?.stack);
+            throw new Error('DATABASE_ERROR');        
+        };
+    };
+
     async findAll(): Promise<IUserFull[]> {
         try{
             const users = await this.userModel.aggregate([
@@ -119,21 +113,13 @@ export class UserMongoRepository implements IUserRepository{
 
         } catch(error) {
             this.logger.error(`Error al obtener usuarios: ${error.message || error}`);
-            throw new InternalServerErrorException('Error interno al obtener los usuarios');
-        }
-    }
+            throw new Error('DATABASE_ERROR');
+        };
+    };
 
-    //Acceder a los usuarios por ID
-    async findById(id: string): Promise<IUserFull> {
+    async findById(id: string): Promise<IUserFull | null> {
         try{
-            //Validar que el usuario exista
-            const userId = await this.userModel.findOne({ id })
-            if(!userId){
-                this.logger.warn(`User con el ID ${id} no encontrado`);
-                throw new NotFoundException(`Usuario con el ID ${id} no encontrado`);
-            } 
-
-            const users = await this.userModel.aggregate([
+            const [user] = await this.userModel.aggregate([
                 {
                     $match: { id: id }
                 },
@@ -178,155 +164,111 @@ export class UserMongoRepository implements IUserRepository{
                 }
             ]);
 
-            if (users.length === 0) {
-                this.logger.warn(`User con el ID ${id} no encontrado después de la agregación`);
-                throw new NotFoundException(`Usuario con el ID ${id} no encontrado`);
-            }
+            if(!user) {
+                this.logger.warn(`User con el ID ${id} no encontrado`);
+                return null;
+            };
 
-            this.logger.log(`Usuario con ID ${id} encontrado exitosamente`);
-            return users[0] as IUserFull;
-
+            this.logger.log(`Usuario encontrado con ID: ${id}`);
+            return user as IUserFull;
         }catch(error){
-            // Si ya es una excepción conocida, la re-lanzamos
-            if (error instanceof NotFoundException || error instanceof BadRequestException) {
-                throw error;
-            }
             this.logger.error(`Error al obtener usuario por ID ${id}: ${error.message || error}`);
-            throw new InternalServerErrorException('Error interno al obtener el usuario');
-        }
-    }
+            throw new Error('DATABASE_ERROR');
+        };
+    };
 
-    //funcion para obtener un usuario por su email
     async findByEmail(email: string): Promise<IUserWithRole | null> {
         try {
             if (!email) {
                 this.logger.warn('Intento de buscar usuario con email vacío');
-                throw new BadRequestException('El email es requerido');
-            }
+                return null;
+            };
     
-            const user = await this.userModel.findOne({ email });             
+            const user = await this.userModel.findOne({ email });      
+               
             if (!user) {
                 this.logger.warn(`Usuario con email ${email} no encontrado`);
                 return null;
-            }
+            };
     
             this.logger.log(`Usuario con email ${email} encontrado exitosamente`);
             return user as IUserWithRole;
+
         } catch (error) {
-            // Si ya es una excepción conocida, la re-lanzamos
-            if (error instanceof NotFoundException || error instanceof BadRequestException) {
-                throw error;
-            }
             this.logger.error(`Error al obtener usuario por email ${email}: ${error.message || error}`);
-            throw new InternalServerErrorException('Error interno al obtener el usuario por email');
+            throw new Error('DATABASE_ERROR');
         }
     }
 
-    //Actualizar información del usuario 
-    async update(user: PatchUserInput, id: string): Promise<IPatchUser | void> {
+    async update(user: PatchUserInput, id: string): Promise<IPatchUser | null> {
         try {
-            // Verificar si el usuario existe
             const existingUser = await this.userModel.findOne({ id });
+
             if (!existingUser) {
                 this.logger.warn(`Usuario con Id: ${id} no encontrado`);
-                throw new BadRequestException(`Usuario con Id: ${id} no encontrado`);
-            }
-    
-            // Preparar los datos para actualizar
-            const updatedData = {
-                ...user,
-                updatedAt: new Date(),
+                return null;
             };
     
-            // Importante: usar findOneAndUpdate con { id } porque el campo `id` no es el _id de Mongo
             const updatedUser = await this.userModel.findOneAndUpdate(
                 { id },
-                { $set: updatedData },
-                { new: true } // Retorna el usuario actualizado
-            );
+                { $set: user },
+                { new: true }
+            ).exec();
+
+            this.logger.log(`Usuario actualizado exitosamente con ID: ${id}`);
     
             return updatedUser as IPatchUser;
         } catch (error) {
-            if (error instanceof BadRequestException) {
-                throw error;
-            }
-    
             this.logger.error(`Error al actualizar el usuario con ID: ${id}`, error.stack);
-            throw new InternalServerErrorException('Error interno al actualizar el usuario');
-        }
-    }
+            throw new Error('DATABASE_ERROR');
+        };
+    };
 
     //Actulizar las contraseña del usuario 
     async updatePassword(id: string, resetPassword: PatchPasswordInput): Promise<boolean> {
         try {
-          const user = await this.userModel.findOne({ id });
-          if (!user) {
-            this.logger.warn(`Usuario con Id: ${id} no encontrado`);
-            throw new NotFoundException(`Usuario con Id: ${id} no encontrado`);
-          }
-
-          // Validar que la contraseña actual sea correcta
-          const isCurrentPasswordValid = await PasswordUtil.validate(resetPassword.oldPassword, user.password);
-          if (!isCurrentPasswordValid) {
-            this.logger.warn(`Contraseña actual incorrecta para el usuario con Id: ${id}`);
-            throw new BadRequestException('La contraseña actual es incorrecta');
-          }
-
-          // Validar que la nueva contraseña no sea igual a la actual
-          if (resetPassword.oldPassword === resetPassword.newPassword) {
-            this.logger.warn(`La nueva contraseña no puede ser igual a la actual para el usuario con Id: ${id}`);
-            throw new BadRequestException('La nueva contraseña no puede ser igual a la actual');
-          }
-      
-          const hashedPassword = await PasswordUtil.hash(resetPassword.newPassword);
-      
-          const updatedUser = await this.userModel.findOneAndUpdate(
-            { id },
-            {
-              $set: {
-                password: hashedPassword,
-                updatedAt: new Date(),
-              },
-            },
-            { new: true }
-          );
-      
-          if (updatedUser?.password === hashedPassword) {
-            this.logger.log(`Contraseña actualizada exitosamente para el usuario con Id: ${id}`);
-            return true;
-          } else {
-            this.logger.error(`Error: La contraseña de ${id} no se actualizó correctamente`);
-            throw new BadRequestException('La contraseña no se pudo actualizar');
-          }
+            const existingUser = await this.userModel.findOne({ id });
+            if (!existingUser) {
+                this.logger.warn(`Usuario con ID: ${id} no encontrado`);
+                return false;
+            }
+    
+            const hashedPassword = await PasswordUtil.hash(resetPassword.newPassword);
+    
+            const updatedUser = await this.userModel.findOneAndUpdate(
+                { id },
+                { $set: { password: hashedPassword, updatedAt: new Date() } },
+                { new: true }
+            );
+    
+            if (updatedUser) {
+                this.logger.log(`Contraseña actualizada exitosamente para el usuario con ID: ${id}`);
+                return true;
+            }
+    
+            this.logger.warn(`Error al actualizar la contraseña: usuario con ID ${id} no encontrado durante la actualización`);
+            return false;
+    
         } catch (error) {
-          this.logger.error(
-            `Error al actualizar contraseña de usuario con Id: ${id}`,
-            error.stack,
-          );
-          if (error instanceof NotFoundException || error instanceof BadRequestException) {
-            throw error;
-          }
-          throw new InternalServerErrorException('Error interno al actualizar la contraseña');
-        }
-    }
-
+            this.logger.error(`Error al actualizar la contraseña del usuario con ID: ${id}`, error.stack);
+            throw new Error('DATABASE_ERROR');
+        };
+    };
+    
     //Eliminar usuario 
-    async delete(id: string): Promise<void> {
+    async delete(id: string): Promise<boolean> {
         try{
             const existingUser = await this.userModel.findOne({ id });
             if (!existingUser) {
                 this.logger.warn(`Usuario con Id: ${id} no encontrado`);
-                throw new NotFoundException(`Usuario con Id: ${id} no encontrado`);
+                return false;
             }
             await this.userModel.deleteOne({ id }).exec();
             this.logger.log(`Usuario eliminado exitosamente con ID: ${id}`);
+            return true;
         }catch(error){
-            if (error instanceof NotFoundException) {
-                throw error;
-            }
-            
             this.logger.error(`Error al eliminar el usuario con ID: ${id}`, error.stack);
-            throw new InternalServerErrorException('Error interno al eliminar el usuario');
-        }
-    }
+            throw new Error('DATABASE_ERROR');
+        };
+    };
 }

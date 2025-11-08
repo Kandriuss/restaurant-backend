@@ -1,12 +1,11 @@
-import {Injectable, Inject, BadRequestException, InternalServerErrorException, NotFoundException} from "@nestjs/common";
+import {Injectable, Inject, BadRequestException} from "@nestjs/common";
 import {InjectModel} from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import { DishInput, Dishes, PatchDishInput } from "libs/domain/src";
 import type { ILogger } from 'libs/domain/src'
-import { IDishRepository, IDishPatch } from "src/dish/domain/interface";
-import { IDish } from "src/dish/domain/interface";
-import { errorUtil } from "node_modules/zod/v3/helpers/errorUtil.cjs";
+import { IDishRepository, IDishPatch } from "src/dish/domain";
+import { IDish } from "src/dish/domain";
 
 const COLLECTION_NAME = 'dishes';
 
@@ -17,13 +16,14 @@ export class DishMongoRepository implements IDishRepository {
         @Inject('LoggerService') private readonly logger: ILogger,
     ){}
 
-    async create(dish: DishInput): Promise<IDish | void> {
+    async create(dish: DishInput): Promise<IDish> {
         try {
             const id = uuidv4();
             const existingDish = await this.dishModel.findOne({ name: dish.name });
+            
             if (existingDish){
                 this.logger.warn(`Intento de crear plato con nombre duplicado: ${dish.name}`);
-                throw new BadRequestException(`El nombre ${dish.name} ya existe`);
+                throw new Error('DUPLICATE_ENTRY');
             }
 
             const newDish = new this.dishModel({
@@ -39,6 +39,8 @@ export class DishMongoRepository implements IDishRepository {
             return newDish as IDish;
 
         } catch (error) {
+            if (error.message === 'DUPLICATE_ENTRY') throw error;
+            
             this.logger.error(`Error técnico al crear el plato: ${dish?.name ?? 'desconocido'}`, error?.stack);
             throw new Error('DATABASE_ERROR');
         };
@@ -56,12 +58,12 @@ export class DishMongoRepository implements IDishRepository {
         }
     };
 
-    async findById(id: string): Promise<IDish | void> {
+    async findById(id: string): Promise<IDish | null> {
         try {
             const dish = await this.dishModel.findOne({ id }).exec();
             if (!dish) {
                 this.logger.warn(`Plato con ID ${id} no encontrado`);
-                return undefined;
+                return null;
             };
             this.logger.log(`Plato encontrado con ID: ${id}`);
 
@@ -73,12 +75,13 @@ export class DishMongoRepository implements IDishRepository {
         }
     };
 
-    async update(id: string, dish: PatchDishInput): Promise<IDishPatch> {
+    async update(id: string, dish: PatchDishInput): Promise<IDishPatch | null> {
         try {
            const existingDish = await this.dishModel.findOne({ id });
 
            if (!existingDish) {
                 this.logger.warn(`Intento de actualizar plato inexistente con ID: ${id}`);
+                return null;
            };
 
            const updateDish = await this.dishModel.findOneAndUpdate(
