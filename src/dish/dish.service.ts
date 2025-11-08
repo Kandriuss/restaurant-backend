@@ -14,30 +14,59 @@ export class DishService {
     ){}
 
     async create(dish: DishInput): Promise<IDish | void> {
+      try {
+        this.logger.log('Plato creado exitosamente');
+
         return await this.dishRepository.create(dish);
+      } catch (error) {
+        if (error.message === 'DATABASE_ERROR') {
+          this.logger.error(`Error de base de datos al crear el plato`);
+          throw new InternalServerErrorException('Error interno del servidor');
+        };
+
+        if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
+          throw error;
+        };
+
+        this.logger.error(`Error inesperado al crear el plato`, error.stack);
+        throw new InternalServerErrorException('Error interno del servidor');
+      };
     };
 
-    async findAll(): Promise<IDish[]> { 
+    async findAll(): Promise<IDish[]> {
+      try {
+        this.logger.log('Obteniendo todos los platos');
         return await this.dishRepository.findAll();
+      } catch (error) {
+        if (error.message === 'DATABASE_ERROR') {
+          this.logger.error(`Error de base de datos al obtener todos los platos`);
+          throw new InternalServerErrorException('Error interno del servidor');
+        };
+        if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
+          throw error;
+        };
+        this.logger.error(`Error inesperado al obtener todos los platos`, error.stack);
+        throw new InternalServerErrorException('Error interno del servidor');
+      };
     };
-
+  
     async findById(id: string): Promise<IDish> {
         try {
           const dish = await this.dishRepository.findById(id);
-    
+
           if (!dish) {
             this.logger.warn(`Plato con ID ${id} no encontrado`);
             throw new NotFoundException(`Plato con el ID ${id} no encontrado`);
-          }
+          };
     
           return dish;
+          
         } catch (error) {
           if (error.message === 'DATABASE_ERROR') {
             this.logger.error(`Error de base de datos al obtener plato con ID: ${id}`);
             throw new InternalServerErrorException('Error interno del servidor');
           }
     
-          // Si el error ya es una excepción HTTP, la dejamos pasar
           if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
             throw error;
           }
@@ -60,7 +89,15 @@ export class DishService {
         return updatedDish;
 
       } catch (error) {
-        ErrorAdapter.handle(error, `actualizar el plato con ID ${id}`);
+        if (error.message === 'DATABASE_ERROR') {
+          this.logger.error(`Error de base de datos al actualizar el plato con ID: ${id}`);
+          throw new InternalServerErrorException('Error interno del servidor');
+        };
+        if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
+          throw error;
+        };
+        this.logger.error(`Error inesperado al actualizar el plato con ID: ${id}`, error.stack);
+        throw new InternalServerErrorException('Error interno del servidor');
       };
     };
     async delete(id: string): Promise<{ message: string }> {
@@ -80,8 +117,15 @@ export class DishService {
         this.logger.log(`Plato con ID ${id} eliminado exitosamente`);
         return { message: 'Plato eliminado exitosamente' };
       } catch (error) {
-        ErrorAdapter.handle(error, `eliminar el plato con ID ${id}`);
+        if (error.message === 'DATABASE_ERROR') {
+          this.logger.error(`Error de base de datos al eliminar el plato con ID: ${id}`);
+          throw new InternalServerErrorException('Error interno del servidor');
+        };
+        if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
+          throw error;
+        };
+        this.logger.error(`Error inesperado al eliminar el plato con ID: ${id}`, error.stack);
+        throw new InternalServerErrorException('Error interno del servidor');
       }
-    }
-    
+    };
 }

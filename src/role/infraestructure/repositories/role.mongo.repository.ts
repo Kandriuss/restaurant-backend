@@ -16,7 +16,6 @@ export class RoleMongoRepository implements IRoleRespository {
         @Inject('LoggerService') private readonly logger: ILogger,
     ){}
 
-    //Crear usuario 
     async create(role: RoleInput): Promise<IRole | void> {
         try {
             const id = uuidv4();
@@ -36,20 +35,11 @@ export class RoleMongoRepository implements IRoleRespository {
             return newRole as IRole;
 
         } catch (error) {
-            const codeValue = role?.code ?? 'desconocido'; // evita fallo si role es undefined
-            this.logger.error(`Error al crear el rol con código: ${codeValue}`, error?.stack);
-            console.error('ERROR COMPLETO:', error); // para depuración
-        
-            if (error instanceof BadRequestException) {
-                throw error;
-            }
-        
-            throw new InternalServerErrorException('Error interno al crear el rol');
-        }
-        
-    }
+            this.logger.error(`Error al crear el rol: ${error.stack}`);
+            throw new Error('DATABASE_ERROR');
+        };
+    };
 
-    //Encontrar todos los roles
     async findAll(): Promise<IRole[]> {
         try {
             const roles = await this.roleModel.find().exec();
@@ -57,59 +47,64 @@ export class RoleMongoRepository implements IRoleRespository {
             return roles as IRole[];
         } catch (error) {
             this.logger.error('Error al obtener todos los roles', error.stack);
-            throw new InternalServerErrorException('Error interno al obtener los roles');
-        }
-    }
+            throw new Error('DATABASE_ERROR');
+        };
+    };
 
-    //Encontrar role por ID
     async findById(id: string): Promise<IRole | void> {
         try {
             const role = await this.roleModel.findOne({ id }).exec();
+
             if (!role) {
                 this.logger.warn(`Rol con ID ${id} no encontrado`);
                 return undefined;
-            }
+            };
+
             this.logger.log(`Rol encontrado con ID: ${id}`);
+
             return role as IRole;
+
         } catch (error) {
             this.logger.error(`Error al buscar el rol con ID: ${id}`, error.stack);
-            throw new InternalServerErrorException('Error interno al buscar el rol');
-        }
-    }
+            throw new Error('DATABASE_ERROR');
+        };
+    };
     
-    //Encontrar role por Code
     async findByCode(code: string): Promise<IRole | void> {
         try{
             const existingCode = await this.roleModel.findOne({ code }).exec();
+
             if(!existingCode){
                 this.logger.warn(`Rol con Code ${code} no encontrado`);
                 return undefined;
-            } 
+            };
+
             this.logger.log(`Rol encontrado con code ${code}`);
+
             return existingCode as IRole;
+
         }catch(error){
             this.logger.error(`Error al buscar el rol con Code: ${code}`, error.stack);
-            throw new InternalServerErrorException('Error interno al buscar el rol');
-        }
-    }
+            throw new Error('DATABASE_ERROR');
+        };
+    };
 
-    //Actualizar rol
     async update(id: string, role: PatchRoleInput): Promise<IRole> {
         try {
             const existingRole = await this.roleModel.findOne({ id });
+
             if (!existingRole) {
                 this.logger.warn(`Intento de actualizar rol inexistente con ID: ${id}`);
                 throw new NotFoundException(`Rol con ID ${id} no encontrado`);
-            }
+            };
 
-            // Si se está actualizando el código, verificar que no exista otro rol con el mismo código
             if (role.code && role.code !== existingRole.code) {
                 const duplicateCode = await this.roleModel.findOne({ code: role.code });
                 if (duplicateCode) {
                     this.logger.warn(`Intento de actualizar rol con código duplicado: ${role.code}`);
                     throw new BadRequestException(`El código ${role.code} ya existe`);
-                }
-            }
+                };
+            };
 
             const updatedRole = await this.roleModel.findOneAndUpdate(
                 { id },
@@ -118,37 +113,31 @@ export class RoleMongoRepository implements IRoleRespository {
             ).exec();
 
             this.logger.log(`Rol actualizado exitosamente con ID: ${id}`);
+
             return updatedRole as IRole;
+
         } catch (error) {
-            // Si ya es una excepción conocida, la re-lanzamos
-            if (error instanceof NotFoundException || error instanceof BadRequestException) {
-                throw error;
-            }
-            
             this.logger.error(`Error al actualizar el rol con ID: ${id}`, error.stack);
-            throw new InternalServerErrorException('Error interno al actualizar el rol');
+            throw new Error('DATABASE_ERROR');
         }
     }
 
-    //Eliminar rol
     async delete(id: string): Promise<void> {
         try {
             const existingRole = await this.roleModel.findOne({ id });
+
             if (!existingRole) {
                 this.logger.warn(`Intento de eliminar rol inexistente con ID: ${id}`);
                 throw new NotFoundException(`Rol con ID ${id} no encontrado`);
-            }
+            };
 
             await this.roleModel.deleteOne({ id }).exec();
+
             this.logger.log(`Rol eliminado exitosamente con ID: ${id}`);
-        } catch (error) {
-            // Si ya es una excepción conocida, la re-lanzamos
-            if (error instanceof NotFoundException) {
-                throw error;
-            }
-            
+
+        } catch (error) { 
             this.logger.error(`Error al eliminar el rol con ID: ${id}`, error.stack);
-            throw new InternalServerErrorException('Error interno al eliminar el rol');
-        }
-    }
+            throw new Error('DATABASE_ERROR');
+        };
+    };
 }

@@ -14,7 +14,6 @@ export class UserService {
         @Inject('LoggerService') private readonly logger: ILogger,
         @Inject('RoleRepository') private readonly roleRepository: IRoleRespository,
     ){}
-    //Metodo para crear usuarios cliente
     async createUser(user: z.infer<typeof CreateUserZ>): Promise<IUser | void> {
         try { 
             return this.userRepository.create(user, ERole.CLIENT) 
@@ -31,7 +30,6 @@ export class UserService {
         }
     }
 
-    //Crear usuario Administrador
     async createByAdmin(user: z.infer<typeof AdminCreateUserZ>): Promise<IUser | void> {
         try {
             //Validar que el code del Role exita 
@@ -54,12 +52,10 @@ export class UserService {
         }
     }
 
-    //Acceder a todos los usuarios 
     async getAll(): Promise<IUserFull[]>{
         return await this.userRepository.findAll()
     }
 
-    //Acceder al usuario por el Id
     async getById(id: string): Promise<IUserFull>{
         try{
             const user = await this.userRepository.findById(id);
@@ -74,7 +70,6 @@ export class UserService {
         }
     }
 
-    //Acceder al usuario por email
     async getByEmail(email: string): Promise<IUser>{
         try{
             const user = await this.userRepository.findByEmail(email);
@@ -89,7 +84,6 @@ export class UserService {
         }
     }
 
-    //Actualizar el usuario 
     async update(user: PatchUserInput, id: string): Promise<IPatchUser | void> {
         try {
             // Llamar al repositorio para actualizar
@@ -104,7 +98,6 @@ export class UserService {
         }
     }
     
-    //Actualizar contraseña 
     async updatePassword(id: string, resetPassword: PatchPasswordInput): Promise<boolean> {
         try {
           const result = await this.userRepository.updatePassword(id, resetPassword);

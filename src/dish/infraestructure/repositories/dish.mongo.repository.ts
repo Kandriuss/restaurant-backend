@@ -6,6 +6,7 @@ import { DishInput, Dishes, PatchDishInput } from "libs/domain/src";
 import type { ILogger } from 'libs/domain/src'
 import { IDishRepository, IDishPatch } from "src/dish/domain/interface";
 import { IDish } from "src/dish/domain/interface";
+import { errorUtil } from "node_modules/zod/v3/helpers/errorUtil.cjs";
 
 const COLLECTION_NAME = 'dishes';
 
@@ -32,40 +33,46 @@ export class DishMongoRepository implements IDishRepository {
             });
 
             await newDish.save();
+
             this.logger.log(`Plato creado exitosamente con ID: ${id} y nombre: ${dish.name}`);
+
             return newDish as IDish;
+
         } catch (error) {
-            // Si ya es una excepción conocida (BadRequestException), la re-lanzamos directamente
-            if (error instanceof BadRequestException) {
-                throw error;
-            }
-            
-            // Para errores técnicos de la base de datos, logueamos y lanzamos excepción genérica
             this.logger.error(`Error técnico al crear el plato: ${dish?.name ?? 'desconocido'}`, error?.stack);
-            throw new InternalServerErrorException('Error interno al crear el plato');
+            throw new Error('DATABASE_ERROR');
         };
     };
 
     async findAll(): Promise<IDish[]> {
         try {
             const dishes = await this.dishModel.find();
+
             return dishes as IDish[];
+
         } catch (error) {
             this.logger.error('Error técnico al obtener los platos', error?.stack);
-            throw new InternalServerErrorException('Error interno al obtener los platos');
+            throw new Error('DATABASE_ERROR');
         }
     };
 
     async findById(id: string): Promise<IDish | void> {
         try {
-          const dish = await this.dishModel.findOne({ id }).exec();
-          this.logger.log(`findById ejecutado con id=${id}`);
-          return dish as IDish;
+            const dish = await this.dishModel.findOne({ id }).exec();
+            if (!dish) {
+                this.logger.warn(`Plato con ID ${id} no encontrado`);
+                return undefined;
+            };
+            this.logger.log(`Plato encontrado con ID: ${id}`);
+
+             return dish as IDish;
+          
         } catch (error) {
-          this.logger.error(`Error al acceder a la base de datos: ${error.message}`);
-          throw new Error('DATABASE_ERROR');
+            this.logger.error(`Error al acceder a la base de datos: ${error.message}`);
+            throw new Error('DATABASE_ERROR');
         }
     };
+
     async update(id: string, dish: PatchDishInput): Promise<IDishPatch> {
         try {
            const existingDish = await this.dishModel.findOne({ id });
@@ -97,6 +104,7 @@ export class DishMongoRepository implements IDishRepository {
             this.logger.log(`Plato eliminado exitosamente con ID: ${id}`);
             
             return result.deletedCount > 0;
+            
         }catch (error){
             this.logger.error(`Error al eliminar el plato: ${id}`, error?.stack);
             throw new Error('DATABASE_ERROR');

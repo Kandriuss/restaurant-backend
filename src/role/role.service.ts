@@ -15,83 +15,129 @@ export class RoleService {
         private readonly logger: ILogger
     ){}
 
-    //Metodo para crear rol
     async create(role: RoleInput): Promise<IRole | void> {
-        return await this.roleRepository.create(role);
-    }
+        try {
+            this.logger.log('Creando rol');
+            return await this.roleRepository.create(role);
+        } catch (error) {
+            if (error.message === 'DATABASE_ERROR') {
+                this.logger.error(`Error de base de datos al crear el rol`);
+                throw new InternalServerErrorException('Error interno del servidor');
+            };
+            if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
+                throw error;
+            };
+            this.logger.error(`Error inesperado al crear el rol`, error.stack);
+            throw new InternalServerErrorException('Error interno del servidor');
+        };
+    };
 
-    //Metodo para acceder a todo los roles 
     async getAll(): Promise<IRole[]> {
-        return await this.roleRepository.findAll();
-    }
+        try {
+            this.logger.log('Obteniendo todos los roles');
+            return await this.roleRepository.findAll();
+        } catch (error) {
+            if (error.message === 'DATABASE_ERROR') {
+                this.logger.error(`Error de base de datos al obtener todos los roles`);
+                throw new InternalServerErrorException('Error interno del servidor');
+            };
+            if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
+                throw error;
+            };
+            this.logger.error(`Error inesperado al obtener todos los roles`, error.stack);
+            throw new InternalServerErrorException('Error interno del servidor');
+        };
+    };
 
-    //Metodo para acceder a el Rol segun el ID
     async getById(id: string): Promise<IRole> {
         try {
             const role = await this.roleRepository.findById(id);
-    
-            return role as IRole;
-        } catch (error) {
-            this.logger.error(`Error al obtener el rol con ID: ${id}`, error.stack);
-            throw new InternalServerErrorException('Error interno al obtener el rol');
-        }
-    }
 
-    //Acceder a role por el code
+            if (!role) {
+                throw new NotFoundException(`Rol con el ID ${id} no encontrado`);
+            };
+            this.logger.log(`Rol encontrado con ID: ${id}`);
+
+            return role as IRole;
+
+        } catch (error) {
+            if (error.message === 'DATABASE_ERROR') {
+                this.logger.error(`Error de base de datos al obtener el rol con ID: ${id}`);
+                throw new InternalServerErrorException('Error interno del servidor');
+            };
+            if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
+                throw error;
+            };
+            this.logger.error(`Error inesperado al obtener el rol con ID: ${id}`, error.stack);
+            throw new InternalServerErrorException('Error interno del servidor');
+        }
+    };
+
     async getByCode(code: string): Promise<IRole | void> {
         try{
             const role = await this.roleRepository.findByCode(code)
             return role as IRole;
         }catch(error){
-            this.logger.error(`Error al obtener el rol con code: ${code}`, error.stack);
-            throw new InternalServerErrorException('Error interno al obtener el rol');
-        }
-    }
-
-    //Metodo para actualizar rol
+            if (error.message === 'DATABASE_ERROR') {
+                this.logger.error(`Error de base de datos al obtener el rol con code: ${code}`);
+                throw new InternalServerErrorException('Error interno del servidor');
+            };
+            if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
+                throw error;
+            };
+            this.logger.error(`Error inesperado al obtener el rol con code: ${code}`, error.stack);
+            throw new InternalServerErrorException('Error interno del servidor');
+        };
+    };
     async update(id: string, role: PatchRoleInput): Promise<IRole | void> {
         try{
-            //Variable
             const existingRole = await this.roleRepository.findById(id);
-            //Verificacion si el id existe
+
             if (!existingRole){
                 throw new NotFoundException(`Rol con el ID ${id} no encontrado`);
-            }
-            return await this.roleRepository.update(id, role);
-        }catch (error) {
-            // Si ya es una excepción conocida (como NotFoundException), la re-lanzamos
-            if (error instanceof NotFoundException) {
-                this.logger.warn(`Intento de actualizar rol inexistente con ID: ${id}`);
-                throw error;
-            }
-            
-            // Para otros errores, registramos el error y lanzamos una excepción genérica
-            this.logger.error(`Error al actualizar el rol con ID: ${id}`, error.stack);
-            throw new InternalServerErrorException('Error interno al actualizar el rol');
-        }
-    }
+            };
 
-    //Metodo para eliminar rol
-    async delete(id: string): Promise<void> { 
+            return await this.roleRepository.update(id, role);
+
+        }catch (error) {
+           if (error.message === 'DATABASE_ERROR') {
+            this.logger.error(`Error de base de datos al actualizar el rol con ID: ${id}`);
+            throw new InternalServerErrorException('Error interno del servidor');
+           };
+
+           if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
+            throw error;
+           };
+           
+           this.logger.error(`Error inesperado al actualizar el rol con ID: ${id}`, error.stack);
+           throw new InternalServerErrorException('Error interno del servidor');
+        };
+    };
+
+    async delete(id: string): Promise<{ message: string }> { 
         try {
             // Verificar si el rol existe antes de eliminarlo
             const existingRole = await this.roleRepository.findById(id);
+            
             if (!existingRole) {
                 throw new NotFoundException(`Rol con el ID ${id} no encontrado`);
-            }
+            };
             
             await this.roleRepository.delete(id);
             this.logger.log(`Rol con ID ${id} eliminado exitosamente`);
+            return { message: 'Rol eliminado exitosamente' };
         } catch (error) {
-            // Si ya es una excepción conocida (como NotFoundException), la re-lanzamos
-            if (error instanceof NotFoundException) {
-                this.logger.warn(`Intento de eliminar rol inexistente con ID: ${id}`);
+            if (error.message === 'DATABASE_ERROR') {
+                this.logger.error(`Error de base de datos al eliminar el rol con ID: ${id}`);
+                throw new InternalServerErrorException('Error interno del servidor');
+            };
+
+            if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
                 throw error;
-            }
-            
-            // Para otros errores, registramos el error y lanzamos una excepción genérica
-            this.logger.error(`Error al eliminar el rol con ID: ${id}`, error.stack);
-            throw new InternalServerErrorException('Error interno al eliminar el rol');
-        }
-    }
+            };
+
+            this.logger.error(`Error inesperado al eliminar el rol con ID: ${id}`, error.stack);
+            throw new InternalServerErrorException('Error interno del servidor');
+        };
+    };
 }

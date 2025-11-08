@@ -1,11 +1,10 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { RoleService } from './role.service';
 import type { PatchRoleInput, RoleInput } from 'libs/domain/src';
-import { JwtAuthGuard } from 'libs/infraestructure/src';
-import { RolesGuard } from 'libs/infraestructure/src';
 import { Roles } from 'libs/infraestructure/src';
 import { ERole } from 'libs/domain/src/enum';
-
+import { JwtAuthGuard } from 'libs/infraestructure/src';
+import { RolesGuard } from 'libs/infraestructure/src';
 @Controller('roles')
 export class RoleController {
     constructor(private readonly roleService: RoleService) {}
