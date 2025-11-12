@@ -22,26 +22,26 @@ export class RoleController {
     @Roles(ERole.ADMIN)
     @Get('')
     async getAll(){
-        return await this.roleService.getAll();
+        return await this.roleService.findAll();
     }
 
     //Acceder rol por Id
     @Get(':id')
     async getById(
         @Param('id') id:string) {
-        return await this.roleService.getById(id);
+        return await this.roleService.findById(id);
     }
 
     //Acceder a rol por Code
     @Get('role/:code')
     async getByCode(
         @Param('code') code: string){
-            return await this.roleService.getByCode(code)
+            return await this.roleService.findByCode(code)
         }
     //Actualziar un Rol
     @Patch(':id')
     // @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(ERole.ADMIN)
+    // @Roles(ERole.ADMIN)
     async update(
         @Param('id') id:string,
         @Body() role: PatchRoleInput
@@ -51,7 +51,7 @@ export class RoleController {
 
     //Eliminar un rol 
     // @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(ERole.ADMIN)
+    // @Roles(ERole.ADMIN)
     @Delete(':id')
     async delete(@Param('id') id:string){
         return await this.roleService.delete(id)
