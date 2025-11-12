@@ -39,6 +39,7 @@ export class RoleService {
     async findAll(): Promise<IRole[]> {
         try {
             const roles = await this.roleRepository.findAll();
+
             this.logger.log('Obteniendo todos los roles');
             return roles as IRole[];
         } catch (error) {
@@ -58,7 +59,7 @@ export class RoleService {
           if (!role) throw new NotFoundException(`Rol con el ID ${id} no encontrado`);
     
           this.logger.log(`Rol encontrado con ID: ${id}`);
-          return role;
+          return role as IRole;
         } catch (error) {
           if (error.message === 'DATABASE_ERROR') {
             this.logger.error(`Error de base de datos al obtener el rol con ID: ${id}`);
