@@ -33,6 +33,7 @@ export class RoleMongoRepository implements IRoleRespository {
           return newRole as IRole;
         } catch (error) {
           if (error.message === 'ROLE_CODE_ALREADY_EXISTS') throw error;
+
           this.logger.error(`Error al crear el rol`, error.stack);
           throw new Error('DATABASE_ERROR');
         };
@@ -53,10 +54,12 @@ export class RoleMongoRepository implements IRoleRespository {
     async findById(id: string): Promise<IRole | null> {
         try {
             const role = await this.roleModel.findOne({ id }).exec();
+
             if (!role) {
                 this.logger.warn(`Rol con ID ${id} no encontrado`);
                 return null;
             }
+
             this.logger.log(`Rol encontrado con ID: ${id}`);
             return role as IRole;
         } catch (error) {
@@ -107,6 +110,7 @@ export class RoleMongoRepository implements IRoleRespository {
             return updatedRole as IRole;
         } catch (error) {
             if (error.message === 'ROLE_CODE_ALREADY_EXISTS') throw error;
+
             this.logger.error(`Error al actualizar el rol con ID: ${id}`, error.stack);
             throw new Error('DATABASE_ERROR');
         };
@@ -114,21 +118,18 @@ export class RoleMongoRepository implements IRoleRespository {
     
     async delete(id: string): Promise<boolean> {
         try {
-          const existingRole = await this.roleModel.findOne({ id });
-      
-          if (!existingRole) {
-            this.logger.warn(`Intento de eliminar rol inexistente con ID: ${id}`);
-            return false;
-          }
-      
-          await this.roleModel.deleteOne({ id }).exec();
-          this.logger.log(`Rol eliminado exitosamente con ID: ${id}`);
-          return true;
-      
+            const existingRole = await this.roleModel.findOne({ id });
+            if (!existingRole) {
+                this.logger.warn(`Intento de eliminar rol inexistente con ID: ${id}`);
+                return false;
+            };
+        
+            await this.roleModel.deleteOne({ id }).exec();
+            this.logger.log(`Rol eliminado exitosamente con ID: ${id}`);
+            return true;
         } catch (error) {
-          this.logger.error(`Error al eliminar el rol con ID: ${id}`, error.stack);
-          throw new Error('DATABASE_ERROR');
+            this.logger.error(`Error al eliminar el rol con ID: ${id}`, error.stack);
+            throw new Error('DATABASE_ERROR');
         };
     };
-      
-}
+};

@@ -11,15 +11,14 @@ export class RoleController {
 
     //Crear un nuevo rol
     // @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(ERole.ADMIN)
+    // @Roles(ERole.ADMIN)
     @Post('')
     async create(@Body() role: RoleInput){
         return await this.roleService.create(role);
     }
 
-    //Ver todos los roles
     // @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(ERole.ADMIN)
+    // @Roles(ERole.ADMIN)
     @Get('')
     async getAll(){
         return await this.roleService.findAll();

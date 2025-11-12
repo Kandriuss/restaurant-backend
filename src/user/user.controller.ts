@@ -10,35 +10,32 @@ import { JwtAuthGuard, RolesGuard, Roles } from 'libs/infraestructure/src/securi
 export class UserController {
     constructor(private readonly userService: UserService){}
     
-    //Registrar usuario cliente
     @Post('register')
     async createUser(@Body(new ZodValidationPipe(CreateUserZ)) user: z.infer<typeof CreateUserZ>){
-        return await this.userService.createUser(user)
+        return await this.userService.createByClient(user)
     };
 
-    //Crear usuario administrador
     @Post('admin')
     async createByAdmin(@Body(new ZodValidationPipe(AdminCreateUserZ)) user: z.infer<typeof AdminCreateUserZ>){
         return this.userService.createByAdmin(user);
     }
 
-    //Acceder a todos los usuarios
     // @UseGuards(JwtAuthGuard, RolesGuard)
     // @Roles(ERole.ADMIN)
     @Get()
     async getAllUsers(): Promise<IUserFull[]>{
-        return await this.userService.getAll();
+        return await this.userService.findAll();
     }
     
-    //Acceder a los usuarios por Id
     // @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(ERole.ADMIN)
+    // @Roles(ERole.ADMIN)
     @Get(':id')
-    async getById(@Param('id') id: string): Promise<IUserFull>{
-        return await this.userService.getById(id)
+    async getById(
+        @Param('id') id: string){
+        return await this.userService.findById(id)
     }
 
-    //Actualizar al usuario 
+ 
     @Patch(':id')
     // @UseGuards(JwtAuthGuard)
     async update(
@@ -48,7 +45,6 @@ export class UserController {
         return this.userService.update(user,id)
     }
 
-    //Actualziar contraseña 
     @Patch('change-password/:id')
     // @UseGuards(JwtAuthGuard)
     async updatePassword(
@@ -58,9 +54,8 @@ export class UserController {
         return await this.userService.updatePassword(id, userPass)
     }
 
-    //Eliminar usuario
     // @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(ERole.ADMIN)
+    // @Roles(ERole.ADMIN)
     @Delete(':id')
     async delete(@Param('id') id: string){
         return await this.userService.delete(id)

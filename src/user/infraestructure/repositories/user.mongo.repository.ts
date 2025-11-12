@@ -37,7 +37,6 @@ export class UserMongoRepository implements IUserRepository{
             const hashedPassword = await PasswordUtil.hash(user.password);
 
             const assignedRole = roleCode ?? ERole.CLIENT; 
-
             const newUser = new this.userModel({
                 ...user,
                 id,
@@ -49,11 +48,8 @@ export class UserMongoRepository implements IUserRepository{
             });
 
             await newUser.save();
-
             this.logger.log(`Usuario creado exitosamente con email ${user.email} y ID ${id}`);
-
             return newUser as IUser;
-
         } catch (error) {
             if (error.message === 'DUPLICATE_ENTRY_EMAIL') throw error;
 
@@ -110,7 +106,6 @@ export class UserMongoRepository implements IUserRepository{
 
             this.logger.log(`Se encontraron ${users.length} usuarios`);
             return users as IUserFull[];
-
         } catch(error) {
             this.logger.error(`Error al obtener usuarios: ${error.message || error}`);
             throw new Error('DATABASE_ERROR');
@@ -184,8 +179,7 @@ export class UserMongoRepository implements IUserRepository{
                 return null;
             };
     
-            const user = await this.userModel.findOne({ email });      
-               
+            const user = await this.userModel.findOne({ email });
             if (!user) {
                 this.logger.warn(`Usuario con email ${email} no encontrado`);
                 return null;
@@ -193,7 +187,6 @@ export class UserMongoRepository implements IUserRepository{
     
             this.logger.log(`Usuario con email ${email} encontrado exitosamente`);
             return user as IUserWithRole;
-
         } catch (error) {
             this.logger.error(`Error al obtener usuario por email ${email}: ${error.message || error}`);
             throw new Error('DATABASE_ERROR');
@@ -203,12 +196,19 @@ export class UserMongoRepository implements IUserRepository{
     async update(user: PatchUserInput, id: string): Promise<IPatchUser | null> {
         try {
             const existingUser = await this.userModel.findOne({ id });
-
             if (!existingUser) {
                 this.logger.warn(`Usuario con Id: ${id} no encontrado`);
                 return null;
             };
-    
+
+            if (user.email && user.email !== existingUser.email) {
+                const existingEmail = await this.userModel.findOne({ email: user.email });
+                if (existingEmail) {
+                    this.logger.warn(`Intento de actualizar email duplicado: ${user.email}`);
+                    throw new Error('DUPLICATE_ENTRY_EMAIL');
+                };
+            };
+
             const updatedUser = await this.userModel.findOneAndUpdate(
                 { id },
                 { $set: user },
@@ -216,53 +216,51 @@ export class UserMongoRepository implements IUserRepository{
             ).exec();
 
             this.logger.log(`Usuario actualizado exitosamente con ID: ${id}`);
-    
             return updatedUser as IPatchUser;
         } catch (error) {
+            if (error.message === 'DUPLICATE_ENTRY_EMAIL') throw error;
+
             this.logger.error(`Error al actualizar el usuario con ID: ${id}`, error.stack);
             throw new Error('DATABASE_ERROR');
         };
     };
 
-    //Actulizar las contraseña del usuario 
     async updatePassword(id: string, resetPassword: PatchPasswordInput): Promise<boolean> {
         try {
             const existingUser = await this.userModel.findOne({ id });
             if (!existingUser) {
-                this.logger.warn(`Usuario con ID: ${id} no encontrado`);
+            this.logger.warn(`Usuario con ID: ${id} no encontrado`);
+            return false;
+            }
+
+            const hashedPassword = await PasswordUtil.hash(resetPassword.newPassword);
+
+            const result = await this.userModel.updateOne(
+            { id },
+            { $set: { password: hashedPassword, updatedAt: new Date() } }
+            );
+
+            if (result.modifiedCount === 0) {
+                this.logger.warn(`No se modificó la contraseña para el usuario con ID: ${id}`);
                 return false;
             }
-    
-            const hashedPassword = await PasswordUtil.hash(resetPassword.newPassword);
-    
-            const updatedUser = await this.userModel.findOneAndUpdate(
-                { id },
-                { $set: { password: hashedPassword, updatedAt: new Date() } },
-                { new: true }
-            );
-    
-            if (updatedUser) {
-                this.logger.log(`Contraseña actualizada exitosamente para el usuario con ID: ${id}`);
-                return true;
-            }
-    
-            this.logger.warn(`Error al actualizar la contraseña: usuario con ID ${id} no encontrado durante la actualización`);
-            return false;
-    
+
+            this.logger.log(`Contraseña actualizada para el usuario con ID: ${id}`);
+            return true;
         } catch (error) {
-            this.logger.error(`Error al actualizar la contraseña del usuario con ID: ${id}`, error.stack);
+            this.logger.error(`Error al actualizar la contraseña: ${error.message}`);
             throw new Error('DATABASE_ERROR');
-        };
-    };
-    
-    //Eliminar usuario 
+        }
+    }
+
     async delete(id: string): Promise<boolean> {
         try{
             const existingUser = await this.userModel.findOne({ id });
             if (!existingUser) {
                 this.logger.warn(`Usuario con Id: ${id} no encontrado`);
                 return false;
-            }
+            };
+            
             await this.userModel.deleteOne({ id }).exec();
             this.logger.log(`Usuario eliminado exitosamente con ID: ${id}`);
             return true;

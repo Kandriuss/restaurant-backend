@@ -23,7 +23,6 @@ export class RoleService {
             const newRole = await this.roleRepository.create(role);
 
             this.logger.log(`Rol ${role.code} creado exitosamente`);
-
             return newRole;
         } catch (error) {
             if (error.message === 'DATABASE_ERROR') {
@@ -39,13 +38,15 @@ export class RoleService {
     
     async findAll(): Promise<IRole[]> {
         try {
-          this.logger.log('Obteniendo todos los roles');
-          return await this.roleRepository.findAll();
+            const roles = await this.roleRepository.findAll();
+            this.logger.log('Obteniendo todos los roles');
+            return roles as IRole[];
         } catch (error) {
             if (error.message === 'DATABASE_ERROR') {
                 this.logger.error('Error de base de datos al obtener todos los roles');
                 throw new InternalServerErrorException('Error interno del servidor');
-            }
+            };
+            
             this.logger.error('Error inesperado al obtener todos los roles', error.stack);
             throw new InternalServerErrorException('Error interno del servidor');
         };
@@ -118,14 +119,10 @@ export class RoleService {
     async delete(id: string): Promise<{ message: string }> {
         try {
             const deleted = await this.roleRepository.delete(id);
-        
-            if (!deleted) {
-                throw new NotFoundException(`Rol con el ID ${id} no encontrado`);
-            };
+            if (!deleted) { throw new NotFoundException(`Rol con el ID ${id} no encontrado`)};
         
             this.logger.log(`Rol con ID ${id} eliminado exitosamente`);
             return { message: 'Rol eliminado exitosamente' };
-      
         } catch (error) {
             if (error.message === 'DATABASE_ERROR') {
                 this.logger.error(`Error de base de datos al eliminar el rol con ID: ${id}`);
