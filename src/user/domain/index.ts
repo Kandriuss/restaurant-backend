@@ -1,2 +1,2 @@
 export * from "./interfaces";
-export * from "../../../libs/domain/src/schemas/manu";
+export * from "../../../libs/domain/src/schemas/user";

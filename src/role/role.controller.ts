@@ -1,10 +1,15 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
-import { RoleService } from './role.service';
-import type { PatchRoleInput, RoleInput } from 'libs/domain/src';
+import { z } from 'zod';
+import { ZodValidationPipe } from 'libs/application/src';
 import { Roles } from 'libs/infraestructure/src';
-import { ERole } from 'libs/domain/src/enum';
 import { JwtAuthGuard } from 'libs/infraestructure/src';
 import { RolesGuard } from 'libs/infraestructure/src';
+import { RoleService } from './role.service';
+import type { PatchRoleInput, RoleInput } from 'libs/domain/src';
+import { PatchRoleZ, RoleZ } from 'libs/domain/src';
+import { ERole } from 'libs/domain/src/enum';
+
+
 @Controller('roles')
 export class RoleController {
     constructor(private readonly roleService: RoleService) {}
@@ -13,7 +18,7 @@ export class RoleController {
     // @UseGuards(JwtAuthGuard, RolesGuard)
     // @Roles(ERole.ADMIN)
     @Post('')
-    async create(@Body() role: RoleInput){
+    async create(@Body(new ZodValidationPipe(RoleZ)) role: z.infer<typeof RoleZ>){
         return await this.roleService.create(role);
     }
 
@@ -43,7 +48,7 @@ export class RoleController {
     // @Roles(ERole.ADMIN)
     async update(
         @Param('id') id:string,
-        @Body() role: PatchRoleInput
+        @Body(new ZodValidationPipe(PatchRoleZ)) role: z.infer<typeof PatchRoleZ>
     ){
         return await this.roleService.update(id, role);
     }

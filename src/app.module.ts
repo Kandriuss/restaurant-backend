@@ -8,7 +8,7 @@ import { SecurityModule } from 'libs/infraestructure/src/security';
 import { UserModule } from 'src/user/user.module';
 import { RoleModule } from 'src/role/role.module';
 import { DishModule } from 'src/dish/dish.module';
-import { ManuModule } from './manu/manu.module';
+import { MenuModule } from './menu/menu.module';
 
 @Module({
   imports: [
@@ -25,7 +25,7 @@ import { ManuModule } from './manu/manu.module';
     RoleModule,
     UserModule,
     DishModule,
-    ManuModule,
+    MenuModule,
   ],
   controllers: [],
   providers: [],
