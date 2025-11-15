@@ -86,20 +86,17 @@ export class UserService {
 
     async findById(id: string): Promise<IUserFull | null>{
         try{
-            const user = await this.userRepository.findById(id);
-            if(!user) throw new NotFoundException(`Usuario con el ID ${id} no encontrado`);
+            const existingUser = await this.userRepository.findById(id);
+            if (!existingUser) throw new NotFoundException(`Usuario con el ID ${id} no encontrado`);
 
             this.logger.log(`Usuario encontrado con ID: ${id}`);
-            return user as IUserFull;
+            return existingUser as IUserFull;
         }catch(error){
-            if (error.message === 'DATABASE_ERROR') {
-                this.logger.error(`Error de base de datos al obtener el usuario con ID: ${id}`);
-                throw new InternalServerErrorException('Error interno del servidor');
-            };
-
+            if (error instanceof NotFoundException) throw error;
+            if (error.message === 'DATABASE_ERROR') throw new InternalServerErrorException('Error interno del servidor');
             this.logger.error(`Error inesperado al obtener el usuario con ID: ${id}`, error.stack);
             throw new InternalServerErrorException('Error interno del servidor');
-        }
+        };
     }
 
     async getByEmail(email: string): Promise<IUser>{
@@ -146,6 +143,7 @@ export class UserService {
             throw new InternalServerErrorException('Error interno del servidor');
         };
     };
+    
     async updatePassword(id: string, resetPassword: PatchPasswordInput): Promise<boolean> {
         try {
             const updated = await this.userRepository.updatePassword(id, resetPassword);
@@ -172,6 +170,12 @@ export class UserService {
         try {
             const existingUser = await this.userRepository.findById(id);
             if (!existingUser) throw new NotFoundException(`Usuario con el ID ${id} no encontrado`);
+
+            const deleted = await this.userRepository.delete(id);
+            if (!deleted) {
+                this.logger.warn(`No se pudo eliminar el usuario con ID: ${id}`);
+                throw new InternalServerErrorException('No se pudo eliminar el usuario');
+            }
 
             this.logger.log(`Usuario eliminado exitosamente con ID: ${id}`);
             return { message: 'Usuario eliminado exitosamente' };
