@@ -6,6 +6,8 @@ import { z } from 'zod'
 import { ERole } from 'libs/domain/src/enum';
 import type { IRoleRespository } from 'src/role/domain';
 import { IUserFull } from './domain';
+import { errorMessagesUser, errorMessagesCode } from 'libs/infraestructure/src/constants';
+import { errorMessagesGlobal } from 'libs/infraestructure/src/constants/error-messages-global';
 
 @Injectable()
 export class UserService {
@@ -18,84 +20,84 @@ export class UserService {
         try {
             const createdUser = await this.userRepository.create(user, ERole.CLIENT);
 
-            this.logger.log(`Usuario CLIENTE creado exitosamente`);
+            this.logger.log(errorMessagesUser.createUserSuccess);
             return createdUser as IUser;
         } catch (error) {
-            if (error.message === 'DUPLICATE_ENTRY_RUT') {
-                this.logger.warn(`Intento de crear usuario duplicado`);
-                throw new ConflictException('Ya existe un usuario con ese RUT');
+            if (error.message === errorMessagesCode.DUPLICATE_RUT) {
+                this.logger.warn(errorMessagesUser.createUserDuplicate);
+                throw new ConflictException(errorMessagesUser.createUserDuplicateRut);
             };
 
-            if (error.message === 'DUPLICATE_ENTRY_EMAIL') {
-                this.logger.warn(`Intento de crear usuario duplicado`);
-                throw new ConflictException('Ya existe un usuario con ese email');
+            if (error.message === errorMessagesCode.DUPLICATE_EMAIL) {
+                this.logger.warn(errorMessagesUser.createUserDuplicate);
+                throw new ConflictException(errorMessagesUser.createUserDuplicateEmail);
             };
 
-            if (error.message === 'DATABASE_ERROR') {
-                this.logger.error(`Error de base de datos al crear el usuario`);
-                throw new InternalServerErrorException('Error interno del servidor');
+            if (error.message === errorMessagesCode.DATABASE_ERROR) {
+                this.logger.error(errorMessagesUser.createError(error.message));
+                throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
             };
 
-            this.logger.error(`Error inesperado al crear el usuario`, error.stack);
-            throw new InternalServerErrorException('Error interno del servidor');
+            this.logger.error(errorMessagesUser.createError(error.message), error.stack);
+            throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
         };
     };
 
     async createByAdmin(user: z.infer<typeof AdminCreateUserZ>): Promise<IUser> {
         try {
             const createdUser = await this.userRepository.create(user, ERole.ADMIN);
-            this.logger.log(`Usuario ADMINISTRADOR creado exitosamente`);
+            this.logger.log(errorMessagesUser.createAdminSuccess);
 
             return createdUser as IUser;
         } catch (error) {
-            if (error.message === 'DUPLICATE_ENTRY_RUT') {
-                this.logger.warn(`Intento de crear usuario duplicado`);
-                throw new ConflictException('Ya existe un usuario con ese RUT');
+            if (error.message === errorMessagesCode.DUPLICATE_RUT) {
+                this.logger.warn(errorMessagesUser.createUserDuplicate);
+                throw new ConflictException(errorMessagesUser.createUserDuplicateRut);
             };
 
-            if (error.message === 'DUPLICATE_ENTRY_EMAIL') {
-                this.logger.warn(`Intento de crear usuario duplicado`);
-                throw new ConflictException('Ya existe un usuario con ese email');
+            if (error.message === errorMessagesCode.DUPLICATE_EMAIL) {
+                this.logger.warn(errorMessagesUser.createUserDuplicate);
+                throw new ConflictException(errorMessagesUser.createUserDuplicateEmail);
             };
 
-            if (error.message === 'DATABASE_ERROR') {
-                this.logger.error(`Error de base de datos al crear el usuario`);
-                throw new InternalServerErrorException('Error interno del servidor');
+            if (error.message === errorMessagesCode.DATABASE_ERROR) {
+                this.logger.error(errorMessagesUser.createError(error.message));
+                throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
             };
 
-            this.logger.error(`Error inesperado al crear el usuario`, error.stack);
-            throw new InternalServerErrorException('Error interno del servidor');
+            this.logger.error(errorMessagesUser.createError(error.message), error.stack);
+            throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
         };
     };
 
     async findAll(): Promise<IUserFull[]>{
         try {
             const users = await this.userRepository.findAll();
-            this.logger.log(`Usuarios obtenidos exitosamente`);
+            this.logger.log(errorMessagesUser.findAllSuccess(users.length));
             return users as IUserFull[];
         }catch(error){
-            if (error.message === 'DATABASE_ERROR') {
-                this.logger.error(`Error de base de datos al obtener todos los usuarios`);
-                throw new InternalServerErrorException('Error interno del servidor');
+            if (error.message === errorMessagesCode.DATABASE_ERROR) {
+                this.logger.error(errorMessagesUser.findAllError(error.message));
+                throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
             };
 
-            this.logger.error(`Error inesperado al obtener todos los usuarios`, error.stack);
-            throw new InternalServerErrorException('Error interno del servidor');
+            this.logger.error(errorMessagesUser.findAllError(error.message), error.stack);
+            throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
         };
     };
 
     async findById(id: string): Promise<IUserFull | null>{
         try{
             const existingUser = await this.userRepository.findById(id);
-            if (!existingUser) throw new NotFoundException(`Usuario con el ID ${id} no encontrado`);
+            if (!existingUser) throw new NotFoundException(errorMessagesUser.findByIdNotFound(id));
 
-            this.logger.log(`Usuario encontrado con ID: ${id}`);
+            this.logger.log(errorMessagesUser.findByIdSuccess(id));
             return existingUser as IUserFull;
         }catch(error){
             if (error instanceof NotFoundException) throw error;
-            if (error.message === 'DATABASE_ERROR') throw new InternalServerErrorException('Error interno del servidor');
-            this.logger.error(`Error inesperado al obtener el usuario con ID: ${id}`, error.stack);
-            throw new InternalServerErrorException('Error interno del servidor');
+            if (error.message === errorMessagesCode.DATABASE_ERROR) throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
+            this.logger.error(errorMessagesUser.findByIdError(id, error.message), error.stack);
+            throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
         };
     }
 
@@ -103,44 +105,44 @@ export class UserService {
         try{
             const user = await this.userRepository.findByEmail(email);
 
-            this.logger.log(`Usuario encontrado con email: ${email}`);
+            this.logger.log(errorMessagesUser.findByEmailSuccess(email));
             return user as IUser;
         }catch(error){
-            if (error.message === 'DATABASE_ERROR') {
-                this.logger.error(`Error de base de datos al obtener el usuario con email: ${email}`);
-                throw new InternalServerErrorException('Error interno del servidor');
+            if (error.message === errorMessagesCode.DATABASE_ERROR) {
+                this.logger.error(errorMessagesUser.findByEmailError(email, error.message));
+                throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
             };
 
             if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
                 throw error;
             };
 
-            this.logger.error(`Error inesperado al obtener el usuario con email: ${email}`, error.stack);
-            throw new InternalServerErrorException('Error interno del servidor');
+            this.logger.error(errorMessagesUser.findByEmailError(email, error.message), error.stack);
+            throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
         }
     }
 
     async update(user: PatchUserInput, id: string): Promise<IPatchUser | null> {
         try {  
             const existingUser = await this.userRepository.findById(id);
-            if (!existingUser) throw new NotFoundException(`Usuario con el ID ${id} no encontrado`);
+            if (!existingUser) throw new NotFoundException(errorMessagesUser.findByIdNotFound(id));
 
             const updatedUser = await this.userRepository.update(user, id);
-            this.logger.log(`Usuario actualizado exitosamente con ID: ${id}`);
+            this.logger.log(errorMessagesUser.updateSuccess(id));
             return updatedUser as IPatchUser;
         } catch (error) {
-            if (error.message === 'DATABASE_ERROR') {
-                this.logger.error(`Error de base de datos al actualizar el usuario con ID: ${id}`);
-                throw new InternalServerErrorException('Error interno del servidor');
+            if (error.message === errorMessagesCode.DATABASE_ERROR) {
+                this.logger.error(errorMessagesUser.updateError(id));
+                throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
             };
 
-            if (error.message === 'DUPLICATE_ENTRY_EMAIL') {
-                this.logger.warn(`Intento de actualizar email duplicado: ${user.email}`);
-                throw new ConflictException('Ya existe un usuario con ese email');
+            if (error.message === errorMessagesCode.DUPLICATE_EMAIL) {
+                this.logger.warn(errorMessagesUser.updateDuplicateEmail(user.email ?? ''));
+                throw new ConflictException(errorMessagesUser.createUserDuplicateEmail);
             };
 
-            this.logger.error(`Error inesperado al actualizar el usuario con ID: ${id}`, error.stack);
-            throw new InternalServerErrorException('Error interno del servidor');
+            this.logger.error(errorMessagesUser.updateError(id), error.stack);
+            throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
         };
     };
     
@@ -149,46 +151,46 @@ export class UserService {
             const updated = await this.userRepository.updatePassword(id, resetPassword);
         
             if (!updated) {
-                this.logger.warn(`No se pudo actualizar la contraseña del usuario con ID: ${id}`);
-                throw new NotFoundException(`Usuario con ID ${id} no encontrado o no modificado`);
-            }
+                this.logger.warn(errorMessagesUser.updatePasswordNotFound(id));
+                throw new NotFoundException(errorMessagesUser.updatePasswordNotFound(id));
+            };
         
-            this.logger.log(`Contraseña actualizada exitosamente para el usuario con ID: ${id}`);
+            this.logger.log(errorMessagesUser.updatePasswordSuccess(id));
             return true;
         } catch (error) {
-            if (error.message === 'DATABASE_ERROR') {
-                this.logger.error(`Error de base de datos al actualizar la contraseña del usuario con ID: ${id}`);
-                throw new InternalServerErrorException('Error interno del servidor');
-            }
+            if (error.message === errorMessagesCode.DATABASE_ERROR) {
+                this.logger.error(errorMessagesUser.updatePasswordError(error.message));
+                throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
+            };
         
-            this.logger.error(`Error inesperado al actualizar la contraseña del usuario con ID: ${id}`, error.stack);
-            throw new InternalServerErrorException('Error interno del servidor');
+            this.logger.error(errorMessagesUser.updatePasswordError(error.message), error.stack);
+            throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
         };
     };
     
     async delete(id: string): Promise<{ message: string }> {
         try {
             const existingUser = await this.userRepository.findById(id);
-            if (!existingUser) throw new NotFoundException(`Usuario con el ID ${id} no encontrado`);
+            if (!existingUser) throw new NotFoundException(errorMessagesUser.findByIdNotFound(id));
 
             const deleted = await this.userRepository.delete(id);
             if (!deleted) {
-                this.logger.warn(`No se pudo eliminar el usuario con ID: ${id}`);
-                throw new InternalServerErrorException('No se pudo eliminar el usuario');
-            }
+                this.logger.warn(errorMessagesUser.deleteNotFound(id));
+                throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
+            };
 
-            this.logger.log(`Usuario eliminado exitosamente con ID: ${id}`);
-            return { message: 'Usuario eliminado exitosamente' };
+            this.logger.log(errorMessagesUser.deleteSuccess(id));
+            return { message: errorMessagesUser.deleteSuccess(id) };
         } catch (error) {
-            if (error.message === 'DATABASE_ERROR') {
-                this.logger.error(`Error de base de datos al eliminar el usuario con ID: ${id}`);
-                throw new InternalServerErrorException('Error interno del servidor');
+            if (error.message === errorMessagesCode.DATABASE_ERROR) {
+                this.logger.error(errorMessagesUser.deleteError(id));
+                throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
             };
 
             if (error instanceof NotFoundException) throw error;
             
-            this.logger.error(`Error inesperado al eliminar el usuario con ID: ${id}`, error.stack);
-            throw new InternalServerErrorException('Error interno del servidor');
+            this.logger.error(errorMessagesUser.deleteError(id), error.stack);
+            throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
         };
     };
 }

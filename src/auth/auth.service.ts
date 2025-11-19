@@ -4,6 +4,7 @@ import type { IAuthResponse, LoginInput } from './domain';
 import { ILogin } from './domain/interface';
 import { PasswordUtil } from 'src/user/utils';
 import type { IJwtAdapterService } from 'libs/domain/src';
+import { errorMessagesAuth } from 'libs/infraestructure/src/constants';
 
 @Injectable()
 export class AuthService {
@@ -16,16 +17,16 @@ export class AuthService {
         try {
             const user = await this.userRepository.findByEmail(login.email);
             if (!user) {
-                throw new UnauthorizedException('Usuario no encontrado');
+                throw new UnauthorizedException(errorMessagesAuth.userNotFound);
             }
     
             if (!await PasswordUtil.validate(login.password, user.password)) {
-                throw new UnauthorizedException('Contraseña incorrecta');
+                throw new UnauthorizedException(errorMessagesAuth.passwordIncorrect);
             }
 
             // Verificar que el usuario tenga un roleCode válido
             if (!user.roleCode) {
-                throw new UnauthorizedException('Usuario sin rol asignado');
+                throw new UnauthorizedException(errorMessagesAuth.userWithoutRole);
             }
 
             //payload para el token
@@ -54,7 +55,7 @@ export class AuthService {
             if (error instanceof UnauthorizedException) {
                 throw error;
             }
-            throw new InternalServerErrorException('Error interno al iniciar sesión');
+            throw new InternalServerErrorException(errorMessagesAuth.internalServerError);
         }
     }
     

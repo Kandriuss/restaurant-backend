@@ -7,6 +7,7 @@ import { IUser, IUserRepository, UserInput, IUserFull, PatchUserInput, IPatchUse
 import { PasswordUtil, validateUserInput } from "src/user/utils";
 import { v4 as uuidv4 } from 'uuid';
 import { ERole } from 'libs/domain/src/enum'
+import { errorMessagesCode, errorMessagesUser } from "libs/infraestructure/src/constants";
 
 const COLLECTION_NAME = 'users';
 @Injectable()
@@ -24,14 +25,14 @@ export class UserMongoRepository implements IUserRepository{
             const existingEmail = await this.userModel.findOne({ email: validateUser.email });
 
             if (existingEmail) {
-                this.logger.warn(`Intento de crear email ${validateUser.email} duplicado`);
-                throw new Error('DUPLICATE_ENTRY_EMAIL');
+                this.logger.warn(errorMessagesUser.createDuplicateEmail(validateUser.email));
+                throw new Error(errorMessagesCode.DUPLICATE_EMAIL);
             };
 
             const existingRut = await this.userModel.findOne({ rut: validateUser.rut });
             if (existingRut) {
-                this.logger.warn(`Intento de crear RUT ${validateUser.rut} duplicado`);
-                throw new Error('DUPLICATE_ENTRY_RUT');
+                this.logger.warn(errorMessagesUser.createDuplicateRut(validateUser.rut));
+                throw new Error(errorMessagesCode.DUPLICATE_RUT);
             };
 
             const hashedPassword = await PasswordUtil.hash(user.password);
@@ -48,15 +49,15 @@ export class UserMongoRepository implements IUserRepository{
             });
 
             await newUser.save();
-            this.logger.log(`Usuario creado exitosamente con email ${user.email} y ID ${id}`);
+            this.logger.log(errorMessagesUser.createSuccess(user.email));
             return newUser as IUser;
         } catch (error) {
-            if (error.message === 'DUPLICATE_ENTRY_EMAIL') throw error;
+            if (error.message === errorMessagesCode.DUPLICATE_EMAIL) throw error;
 
-            if (error.message === 'DUPLICATE_ENTRY_RUT') throw error;
+            if (error.message === errorMessagesCode.DUPLICATE_RUT) throw error;
 
-            this.logger.error(`Error técnico al crear el usuario: ${user?.email ?? 'desconocido'}`, error?.stack);
-            throw new Error('DATABASE_ERROR');        
+            this.logger.error(errorMessagesUser.createError(user?.email ?? 'desconocido'), error?.stack);
+            throw new Error(errorMessagesCode.DATABASE_ERROR);        
         };
     };
 
@@ -104,11 +105,11 @@ export class UserMongoRepository implements IUserRepository{
                 }
             ]);
 
-            this.logger.log(`Se encontraron ${users.length} usuarios`);
+            this.logger.log(errorMessagesUser.findAllSuccess(users.length));
             return users as IUserFull[];
         } catch(error) {
-            this.logger.error(`Error al obtener usuarios: ${error.message || error}`);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesUser.findAllError(error.message || error));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         };
     };
 
@@ -160,36 +161,36 @@ export class UserMongoRepository implements IUserRepository{
             ]);
 
             if(!user) {
-                this.logger.warn(`User con el ID ${id} no encontrado`);
+                this.logger.warn(errorMessagesUser.findByIdNotFound(id));
                 return null;
             };
 
-            this.logger.log(`Usuario encontrado con ID: ${id}`);
+            this.logger.log(errorMessagesUser.findByIdSuccess(id));
             return user as IUserFull;
         }catch(error){
-            this.logger.error(`Error al obtener usuario por ID ${id}: ${error.message || error}`);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesUser.findByIdError(id, error.message || error));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         };
     };
 
     async findByEmail(email: string): Promise<IUserWithRole | null> {
         try {
             if (!email) {
-                this.logger.warn('Intento de buscar usuario con email vacío');
+                this.logger.warn(errorMessagesUser.findByEmailEmpty());
                 return null;
             };
     
             const user = await this.userModel.findOne({ email });
             if (!user) {
-                this.logger.warn(`Usuario con email ${email} no encontrado`);
+                this.logger.warn(errorMessagesUser.findByEmailNotFound(email));
                 return null;
             };
     
-            this.logger.log(`Usuario con email ${email} encontrado exitosamente`);
+            this.logger.log(errorMessagesUser.findByEmailSuccess(email));
             return user as IUserWithRole;
         } catch (error) {
-            this.logger.error(`Error al obtener usuario por email ${email}: ${error.message || error}`);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesUser.findByEmailError(email, error.message || error));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         }
     }
 
@@ -197,14 +198,14 @@ export class UserMongoRepository implements IUserRepository{
         try {
             const existingUser = await this.userModel.findOne({ id });
             if (!existingUser) {
-                this.logger.warn(`Usuario con Id: ${id} no encontrado`);
+                this.logger.warn(errorMessagesUser.updateNotFound(id));
                 return null;
             };
 
             if (user.email && user.email !== existingUser.email) {
                 const existingEmail = await this.userModel.findOne({ email: user.email });
                 if (existingEmail) {
-                    this.logger.warn(`Intento de actualizar email duplicado: ${user.email}`);
+                    this.logger.warn(errorMessagesUser.updateDuplicateEmail(user.email));
                     throw new Error('DUPLICATE_ENTRY_EMAIL');
                 };
             };
@@ -215,13 +216,13 @@ export class UserMongoRepository implements IUserRepository{
                 { new: true }
             ).exec();
 
-            this.logger.log(`Usuario actualizado exitosamente con ID: ${id}`);
+            this.logger.log(errorMessagesUser.updateSuccess(id));
             return updatedUser as IPatchUser;
         } catch (error) {
             if (error.message === 'DUPLICATE_ENTRY_EMAIL') throw error;
 
-            this.logger.error(`Error al actualizar el usuario con ID: ${id}`, error.stack);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesUser.updateError(id), error.stack);
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         };
     };
 
@@ -229,7 +230,7 @@ export class UserMongoRepository implements IUserRepository{
         try {
             const existingUser = await this.userModel.findOne({ id });
             if (!existingUser) {
-            this.logger.warn(`Usuario con ID: ${id} no encontrado`);
+            this.logger.warn(errorMessagesUser.updatePasswordNotFound(id));
             return false;
             }
 
@@ -241,15 +242,15 @@ export class UserMongoRepository implements IUserRepository{
             );
 
             if (result.modifiedCount === 0) {
-                this.logger.warn(`No se modificó la contraseña para el usuario con ID: ${id}`);
+                this.logger.warn(errorMessagesUser.updatePasswordNotModified(id));
                 return false;
             }
 
-            this.logger.log(`Contraseña actualizada para el usuario con ID: ${id}`);
+            this.logger.log(errorMessagesUser.updatePasswordSuccess(id));
             return true;
         } catch (error) {
-            this.logger.error(`Error al actualizar la contraseña: ${error.message}`);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesUser.updatePasswordError(error.message));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         }
     }
 
@@ -257,16 +258,16 @@ export class UserMongoRepository implements IUserRepository{
         try{
             const existingUser = await this.userModel.findOne({ id });
             if (!existingUser) {
-                this.logger.warn(`Usuario con Id: ${id} no encontrado`);
+                this.logger.warn(errorMessagesUser.deleteNotFound(id));
                 return false;
             };
             
             await this.userModel.deleteOne({ id }).exec();
-            this.logger.log(`Usuario eliminado exitosamente con ID: ${id}`);
+            this.logger.log(errorMessagesUser.deleteSuccess(id));
             return true;
         }catch(error){
-            this.logger.error(`Error al eliminar el usuario con ID: ${id}`, error.stack);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesUser.deleteError(id), error.stack);
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         };
     };
 }
