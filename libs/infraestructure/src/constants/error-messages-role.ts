@@ -1,0 +1,21 @@
+export const errorMessagesRole = {
+    createSuccess: (code: string, id: string) => `Role con code: ${code} y id: ${id} creado exitosamente`,
+    createError: (error: string) => `Error al crear el rol: ${error}`,
+    findAllSuccess: (count: number) => `Se encontraron ${count} roles`,
+    findAllError: (error: string) => `Error al obtener todos los roles: ${error}`,
+    findByIdSuccess: (id: string) => `Rol encontrado con ID: ${id}`,
+    findByIdError: (id: string, error: string) => `Error al obtener el rol con ID: ${id}: ${error}`,
+    findByIdNotFound: (id: string) => `Rol con ID: ${id} no encontrado`,
+    findByCodeSuccess: (code: string) => `Rol encontrado con code: ${code}`,
+    findByCodeError: (code: string, error: string) => `Error al obtener el rol con code: ${code}: ${error}`,
+    findByCodeNotFound: (code: string) => `Rol con code: ${code} no encontrado`,
+    updateSuccess: (id: string) => `Rol actualizado exitosamente con ID: ${id}`,
+    updateError: (id: string, error: string) => `Error al actualizar el rol con ID: ${id}: ${error}`,
+    CodeDuplicate: (code: string) =>  `El código ${code} ya existe`,
+    deleteSuccess: (id: string) => `Rol eliminado exitosamente con ID: ${id}`,
+    deleteError: (id: string, error: string) => `Error al eliminar el rol con ID: ${id}: ${error}`,
+
+    createRoleSuccess: 'Rol creado exitosamente',
+    findAllRoleSuccess: 'Se encontraron todos los roles',
+    updateRoleDuplicated: 'Intento de actualizar rol con código duplicado',
+}   

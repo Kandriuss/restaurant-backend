@@ -6,9 +6,7 @@ import { z } from 'zod'
 import { ERole } from 'libs/domain/src/enum';
 import type { IRoleRespository } from 'src/role/domain';
 import { IUserFull } from './domain';
-import { errorMessagesUser, errorMessagesCode } from 'libs/infraestructure/src/constants';
-import { errorMessagesGlobal } from 'libs/infraestructure/src/constants/error-messages-global';
-
+import { errorMessagesCode, errorMessagesGlobal, errorMessagesUser } from 'libs/infraestructure/src/constants';
 @Injectable()
 export class UserService {
     constructor(
@@ -34,7 +32,7 @@ export class UserService {
             };
 
             if (error.message === errorMessagesCode.DATABASE_ERROR) {
-                this.logger.error(errorMessagesUser.createError(error.message));
+                this.logger.error(errorMessagesGlobal.databaseError);
                 throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
             };
 
@@ -61,7 +59,7 @@ export class UserService {
             };
 
             if (error.message === errorMessagesCode.DATABASE_ERROR) {
-                this.logger.error(errorMessagesUser.createError(error.message));
+                this.logger.error(errorMessagesGlobal.databaseError);
                 throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
             };
 
@@ -73,15 +71,15 @@ export class UserService {
     async findAll(): Promise<IUserFull[]>{
         try {
             const users = await this.userRepository.findAll();
-            this.logger.log(errorMessagesUser.findAllSuccess(users.length));
+            this.logger.log(`Usuarios obtenidos exitosamente`);
             return users as IUserFull[];
         }catch(error){
             if (error.message === errorMessagesCode.DATABASE_ERROR) {
-                this.logger.error(errorMessagesUser.findAllError(error.message));
+                this.logger.error(errorMessagesGlobal.databaseError);
                 throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
             };
 
-            this.logger.error(errorMessagesUser.findAllError(error.message), error.stack);
+            this.logger.error(errorMessagesGlobal.unexpectedError);
             throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
         };
     };
@@ -96,7 +94,7 @@ export class UserService {
         }catch(error){
             if (error instanceof NotFoundException) throw error;
             if (error.message === errorMessagesCode.DATABASE_ERROR) throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
-            this.logger.error(errorMessagesUser.findByIdError(id, error.message), error.stack);
+            this.logger.error(errorMessagesGlobal.unexpectedError);
             throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
         };
     }
@@ -109,7 +107,7 @@ export class UserService {
             return user as IUser;
         }catch(error){
             if (error.message === errorMessagesCode.DATABASE_ERROR) {
-                this.logger.error(errorMessagesUser.findByEmailError(email, error.message));
+                this.logger.error(errorMessagesGlobal.databaseError);
                 throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
             };
 
@@ -117,7 +115,7 @@ export class UserService {
                 throw error;
             };
 
-            this.logger.error(errorMessagesUser.findByEmailError(email, error.message), error.stack);
+            this.logger.error(errorMessagesGlobal.unexpectedError);
             throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
         }
     }
@@ -132,16 +130,16 @@ export class UserService {
             return updatedUser as IPatchUser;
         } catch (error) {
             if (error.message === errorMessagesCode.DATABASE_ERROR) {
-                this.logger.error(errorMessagesUser.updateError(id));
+                this.logger.error(errorMessagesGlobal.databaseError);
                 throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
             };
 
             if (error.message === errorMessagesCode.DUPLICATE_EMAIL) {
-                this.logger.warn(errorMessagesUser.updateDuplicateEmail(user.email ?? ''));
+                this.logger.warn(errorMessagesUser.updateDuplicateEmail(user.email as string));
                 throw new ConflictException(errorMessagesUser.createUserDuplicateEmail);
             };
 
-            this.logger.error(errorMessagesUser.updateError(id), error.stack);
+            this.logger.error(errorMessagesGlobal.unexpectedError);
             throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
         };
     };
@@ -151,19 +149,19 @@ export class UserService {
             const updated = await this.userRepository.updatePassword(id, resetPassword);
         
             if (!updated) {
-                this.logger.warn(errorMessagesUser.updatePasswordNotFound(id));
+                this.logger.warn(errorMessagesUser.updatePasswordNotModified(id));
                 throw new NotFoundException(errorMessagesUser.updatePasswordNotFound(id));
-            };
+            }
         
             this.logger.log(errorMessagesUser.updatePasswordSuccess(id));
             return true;
         } catch (error) {
             if (error.message === errorMessagesCode.DATABASE_ERROR) {
-                this.logger.error(errorMessagesUser.updatePasswordError(error.message));
+                this.logger.error(errorMessagesGlobal.databaseError);
                 throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
-            };
+            }
         
-            this.logger.error(errorMessagesUser.updatePasswordError(error.message), error.stack);
+            this.logger.error(errorMessagesGlobal.unexpectedError);
             throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
         };
     };
@@ -175,21 +173,21 @@ export class UserService {
 
             const deleted = await this.userRepository.delete(id);
             if (!deleted) {
-                this.logger.warn(errorMessagesUser.deleteNotFound(id));
-                throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
-            };
+                this.logger.warn(errorMessagesUser.deleteError(id));
+                throw new InternalServerErrorException(errorMessagesUser.deleteUserError);
+            }
 
             this.logger.log(errorMessagesUser.deleteSuccess(id));
-            return { message: errorMessagesUser.deleteSuccess(id) };
+            return { message: errorMessagesUser.deleteUserSuccess };
         } catch (error) {
             if (error.message === errorMessagesCode.DATABASE_ERROR) {
-                this.logger.error(errorMessagesUser.deleteError(id));
+                this.logger.error(errorMessagesGlobal.databaseError);
                 throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
             };
 
             if (error instanceof NotFoundException) throw error;
             
-            this.logger.error(errorMessagesUser.deleteError(id), error.stack);
+            this.logger.error(errorMessagesGlobal.unexpectedError);
             throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
         };
     };

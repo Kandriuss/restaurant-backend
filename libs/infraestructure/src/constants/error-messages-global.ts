@@ -4,4 +4,6 @@ export const errorMessagesGlobal = {
     badRequest: 'Solicitud incorrecta',
     unauthorized: 'No autorizado',
     unknown: 'desconocido',
+    databaseError: 'Error de base de datos',
+    unexpectedError: 'Error inesperado',
 }

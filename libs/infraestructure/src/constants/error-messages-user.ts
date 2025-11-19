@@ -29,4 +29,6 @@ export const errorMessagesUser = {
     createUserDuplicate: 'Intento de crear usuario duplicado',
     createUserDuplicateRut: 'Ya existe un usuario con ese RUT',
     createUserDuplicateEmail: 'Ya existe un usuario con ese email',
+    deleteUserError: 'Error al eliminar el usuario',
+    deleteUserSuccess: 'Usuario eliminado exitosamente',
 }

@@ -1,13 +1,23 @@
-import { BadRequestException, Inject, Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import type { ILogger } from "libs/domain/src";
 import { UserDocument, Users} from "libs/domain/src";
 import { Model } from "mongoose";
-import { IUser, IUserRepository, UserInput, IUserFull, PatchUserInput, IPatchUser, PatchPasswordInput, IUserWithRole } from "src/user/domain";
+import { 
+    IUser, 
+    IUserRepository, 
+    UserInput, 
+    IUserFull, 
+    PatchUserInput, 
+    IPatchUser, 
+    PatchPasswordInput, 
+    IUserWithRole
+} from "src/user/domain";
 import { PasswordUtil, validateUserInput } from "src/user/utils";
 import { v4 as uuidv4 } from 'uuid';
 import { ERole } from 'libs/domain/src/enum'
-import { errorMessagesCode, errorMessagesUser } from "libs/infraestructure/src/constants";
+import { errorMessagesCode, errorMessagesUser, errorMessagesGlobal } from "libs/infraestructure/src/constants";
+
 
 const COLLECTION_NAME = 'users';
 @Injectable()
@@ -56,7 +66,7 @@ export class UserMongoRepository implements IUserRepository{
 
             if (error.message === errorMessagesCode.DUPLICATE_RUT) throw error;
 
-            this.logger.error(errorMessagesUser.createError(user?.email ?? 'desconocido'), error?.stack);
+            this.logger.error(errorMessagesUser.createError(user?.email ?? errorMessagesGlobal.unknown), error?.stack);
             throw new Error(errorMessagesCode.DATABASE_ERROR);        
         };
     };
@@ -206,7 +216,7 @@ export class UserMongoRepository implements IUserRepository{
                 const existingEmail = await this.userModel.findOne({ email: user.email });
                 if (existingEmail) {
                     this.logger.warn(errorMessagesUser.updateDuplicateEmail(user.email));
-                    throw new Error('DUPLICATE_ENTRY_EMAIL');
+                    throw new Error(errorMessagesCode.DUPLICATE_EMAIL);
                 };
             };
 
@@ -219,9 +229,9 @@ export class UserMongoRepository implements IUserRepository{
             this.logger.log(errorMessagesUser.updateSuccess(id));
             return updatedUser as IPatchUser;
         } catch (error) {
-            if (error.message === 'DUPLICATE_ENTRY_EMAIL') throw error;
+            if (error.message === errorMessagesCode.DUPLICATE_EMAIL) throw error;
 
-            this.logger.error(errorMessagesUser.updateError(id), error.stack);
+            this.logger.error(errorMessagesGlobal.unexpectedError);
             throw new Error(errorMessagesCode.DATABASE_ERROR);
         };
     };
@@ -249,7 +259,7 @@ export class UserMongoRepository implements IUserRepository{
             this.logger.log(errorMessagesUser.updatePasswordSuccess(id));
             return true;
         } catch (error) {
-            this.logger.error(errorMessagesUser.updatePasswordError(error.message));
+            this.logger.error(errorMessagesGlobal.unexpectedError);
             throw new Error(errorMessagesCode.DATABASE_ERROR);
         }
     }
@@ -266,7 +276,7 @@ export class UserMongoRepository implements IUserRepository{
             this.logger.log(errorMessagesUser.deleteSuccess(id));
             return true;
         }catch(error){
-            this.logger.error(errorMessagesUser.deleteError(id), error.stack);
+            this.logger.error(errorMessagesGlobal.unexpectedError);
             throw new Error(errorMessagesCode.DATABASE_ERROR);
         };
     };

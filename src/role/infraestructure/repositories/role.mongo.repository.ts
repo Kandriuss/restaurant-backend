@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException, Inject } from "@nestjs/common";
+import { Injectable, Inject } from "@nestjs/common";
 import {InjectModel} from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
@@ -6,6 +6,7 @@ import { RoleInput, PatchRoleInput } from "libs/domain/src";
 import { IRole, Roles } from 'libs/domain/src';
 import type { ILogger } from 'libs/domain/src'
 import { IRoleRespository } from "src/role/domain";
+import { errorMessagesCode, errorMessagesGlobal, errorMessagesRole } from "libs/infraestructure/src/constants";
 
 const COLLECTION_NAME = 'roles';
 @Injectable()
@@ -22,20 +23,20 @@ export class RoleMongoRepository implements IRoleRespository {
           const existingRole = await this.roleModel.findOne({ code: role.code });
     
           if (existingRole) {
-            this.logger.warn(`Intento de crear rol con código duplicado: ${role.code}`);
-            throw new Error('ROLE_CODE_ALREADY_EXISTS');
+            this.logger.warn(errorMessagesRole.CodeDuplicate(role.code));
+            throw new Error(errorMessagesCode.ROLE_CODE_ALREADY_EXISTS);
           }
     
           const newRole = new this.roleModel({ ...role, id, active: true });
           await newRole.save();
     
-          this.logger.log(`Rol creado exitosamente con ID: ${id} y código: ${role.code}`);
+          this.logger.log(errorMessagesRole.createSuccess(role.code, id));
           return newRole as IRole;
         } catch (error) {
-          if (error.message === 'ROLE_CODE_ALREADY_EXISTS') throw error;
+          if (error.message === errorMessagesCode.ROLE_CODE_ALREADY_EXISTS) throw error;
 
-          this.logger.error(`Error al crear el rol`, error.stack);
-          throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesRole.createError(error.message));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         };
     };
     
@@ -43,11 +44,11 @@ export class RoleMongoRepository implements IRoleRespository {
         try {
             const roles = await this.roleModel.find().exec();
 
-            this.logger.log(`Se encontraron ${roles.length} roles`);
+            this.logger.log(errorMessagesRole.findAllSuccess(roles.length));
             return roles as IRole[];
         } catch (error) {
-            this.logger.error('Error al obtener todos los roles', error.stack);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesRole.findAllError(error.message));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         };
     };
     
@@ -56,15 +57,15 @@ export class RoleMongoRepository implements IRoleRespository {
             const role = await this.roleModel.findOne({ id }).exec();
 
             if (!role) {
-                this.logger.warn(`Rol con ID ${id} no encontrado`);
+                this.logger.warn(errorMessagesRole.findByIdNotFound(id));
                 return null;
             }
 
-            this.logger.log(`Rol encontrado con ID: ${id}`);
+            this.logger.log(errorMessagesRole.findByIdSuccess(id));
             return role as IRole;
         } catch (error) {
-            this.logger.error(`Error al buscar el rol con ID: ${id}`, error.stack);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesRole.findByIdError(id, error.message));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         };
     };
     
@@ -72,15 +73,15 @@ export class RoleMongoRepository implements IRoleRespository {
         try {
             const existingCode = await this.roleModel.findOne({ code }).exec();
             if (!existingCode) {
-                this.logger.warn(`Rol con Code ${code} no encontrado`);
+                this.logger.warn(errorMessagesRole.findByCodeNotFound(code));
                 return null;
             };
 
-            this.logger.log(`Rol encontrado con code ${code}`);
+            this.logger.log(errorMessagesRole.findByCodeSuccess(code));
             return existingCode as IRole;
         } catch (error) {
-          this.logger.error(`Error al buscar el rol con Code: ${code}`, error.stack);
-          throw new Error('DATABASE_ERROR');
+          this.logger.error(errorMessagesRole.findByCodeError(code, error.message));
+          throw new Error(errorMessagesCode.DATABASE_ERROR);
         };
     };
     
@@ -88,15 +89,15 @@ export class RoleMongoRepository implements IRoleRespository {
         try {
             const existingRole = await this.roleModel.findOne({ id });
             if (!existingRole) {
-                this.logger.warn(`Intento de actualizar rol inexistente con ID: ${id}`);
+                this.logger.warn(errorMessagesRole.findByIdNotFound(id));
                 return null;
             };
         
             if (role.code && role.code !== existingRole.code) {
                 const duplicateCode = await this.roleModel.findOne({ code: role.code });
                 if (duplicateCode) {
-                this.logger.warn(`Intento de actualizar rol con código duplicado: ${role.code}`);
-                throw new Error('ROLE_CODE_ALREADY_EXISTS');
+                this.logger.warn(errorMessagesRole.CodeDuplicate(role.code));
+                throw new Error(errorMessagesCode.ROLE_CODE_ALREADY_EXISTS);
                 };
             };
         
@@ -106,13 +107,13 @@ export class RoleMongoRepository implements IRoleRespository {
                 { new: true }
             ).exec();
         
-            this.logger.log(`Rol actualizado exitosamente con ID: ${id}`);
+            this.logger.log(errorMessagesRole.updateSuccess(id));
             return updatedRole as IRole;
         } catch (error) {
-            if (error.message === 'ROLE_CODE_ALREADY_EXISTS') throw error;
+            if (error.message === errorMessagesCode.ROLE_CODE_ALREADY_EXISTS) throw error;
 
-            this.logger.error(`Error al actualizar el rol con ID: ${id}`, error.stack);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesRole.updateError(id, error.message));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         };
     };
     
@@ -120,16 +121,16 @@ export class RoleMongoRepository implements IRoleRespository {
         try {
             const existingRole = await this.roleModel.findOne({ id });
             if (!existingRole) {
-                this.logger.warn(`Intento de eliminar rol inexistente con ID: ${id}`);
+                this.logger.warn(errorMessagesRole.findByIdNotFound(id));
                 return false;
             };
         
             await this.roleModel.deleteOne({ id }).exec();
-            this.logger.log(`Rol eliminado exitosamente con ID: ${id}`);
+            this.logger.log(errorMessagesRole.deleteSuccess(id));
             return true;
         } catch (error) {
-            this.logger.error(`Error al eliminar el rol con ID: ${id}`, error.stack);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesRole.deleteError(id, error.message));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         };
     };
 };
