@@ -17,5 +17,4 @@ export const errorMessagesRole = {
 
     createRoleSuccess: 'Rol creado exitosamente',
     findAllRoleSuccess: 'Se encontraron todos los roles',
-    updateRoleDuplicated: 'Intento de actualizar rol con código duplicado',
 }   

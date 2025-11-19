@@ -21,7 +21,7 @@ export class RoleService {
         
             const newRole = await this.roleRepository.create(role);
 
-            this.logger.log(errorMessagesRole.createRoleSuccess);
+            this.logger.log(errorMessagesRole.createSuccess(role.code, newRole.id as string));
             return newRole;
         } catch (error) {
             if (error.message === errorMessagesCode.DATABASE_ERROR) {
@@ -100,7 +100,7 @@ export class RoleService {
             return updatedRole as IRole;
         } catch (error) {
             if (error.message === errorMessagesCode.ROLE_CODE_ALREADY_EXISTS) {
-                this.logger.warn(errorMessagesRole.updateRoleDuplicated);
+                this.logger.warn(errorMessagesRole.CodeDuplicate(role.code as string));
                 throw new BadRequestException(errorMessagesRole.CodeDuplicate(role.code as string));
             };
 
@@ -135,5 +135,4 @@ export class RoleService {
             throw new InternalServerErrorException(errorMessagesGlobal.internalServerError);
         };
     };
-      
 }

@@ -6,6 +6,7 @@ import { DishInput, Dishes, PatchDishInput } from "libs/domain/src";
 import type { ILogger } from 'libs/domain/src'
 import { IDishRepository, IDishPatch } from "src/dish/domain";
 import { IDish } from "src/dish/domain";
+import { errorMessagesCode, errorMessagesGlobal, errorMessagesDish } from "libs/infraestructure/src/constants";
 
 const COLLECTION_NAME = 'dishes';
 
@@ -22,8 +23,8 @@ export class DishMongoRepository implements IDishRepository {
             const existingDish = await this.dishModel.findOne({ name: dish.name });
             
             if (existingDish){
-                this.logger.warn(`Intento de crear plato con nombre duplicado: ${dish.name}`);
-                throw new Error('DUPLICATE_ENTRY');
+                this.logger.warn(errorMessagesDish.createNameDuplicate(dish.name));
+                throw new Error(errorMessagesCode.DUPLICATE_ENTRY);
             };
 
             const newDish = new this.dishModel({
@@ -33,13 +34,13 @@ export class DishMongoRepository implements IDishRepository {
             });
 
             await newDish.save();
-            this.logger.log(`Plato creado exitosamente con ID: ${id} y nombre: ${dish.name}`);
+            this.logger.log(errorMessagesDish.createSuccess(dish.name, id));
             return newDish as IDish;
         } catch (error) {
-            if (error.message === 'DUPLICATE_ENTRY') throw error;
+            if (error.message === errorMessagesCode.DUPLICATE_ENTRY) throw error;
             
-            this.logger.error(`Error técnico al crear el plato: ${dish?.name ?? 'desconocido'}`, error?.stack);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesDish.createError(dish?.name ?? errorMessagesGlobal.unknown));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         };
     };
 
@@ -47,11 +48,11 @@ export class DishMongoRepository implements IDishRepository {
         try {
             const dishes = await this.dishModel.find();
 
-            this.logger.log('Platos obtenidos exitosamente');
+            this.logger.log(errorMessagesDish.findAllSuccess(dishes.length));
             return dishes as IDish[];
         } catch (error) {
-            this.logger.error('Error técnico al obtener los platos', error?.stack);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesDish.findAllError(error.message));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         }
     };
 
@@ -59,15 +60,15 @@ export class DishMongoRepository implements IDishRepository {
         try {
             const dish = await this.dishModel.findOne({ id }).exec();
             if (!dish) {
-                this.logger.warn(`Plato con ID ${id} no encontrado`);
+                this.logger.warn(errorMessagesDish.findByIdNotFound(id));
                 return null;
             };
 
-            this.logger.log(`Plato encontrado con ID: ${id}`);
+            this.logger.log(errorMessagesDish.findByIdSuccess(id));
              return dish as IDish;
         } catch (error) {
-            this.logger.error(`Error al acceder a la base de datos: ${error.message}`);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesDish.findByIdError(id, error.message));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         }
     };
 
@@ -75,7 +76,7 @@ export class DishMongoRepository implements IDishRepository {
         try {
            const existingDish = await this.dishModel.findOne({ id });
            if (!existingDish) {
-                this.logger.warn(`Intento de actualizar plato inexistente con ID: ${id}`);
+                this.logger.warn(errorMessagesDish.findByIdNotFound(id));
                 return null;
            };
 
@@ -85,12 +86,12 @@ export class DishMongoRepository implements IDishRepository {
             { new: true }
            ).exec();
 
-           this.logger.log(`Plato actualizado exitosamente con ID: ${id}`);
+           this.logger.log(errorMessagesDish.updateSuccess(id));
 
            return updateDish as IDishPatch;
         } catch (error) {
-            this.logger.error(`Error al actualizar el plato: ${id}`, error?.stack);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesDish.updateError(id, error.message));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         };
     };
 
@@ -98,16 +99,16 @@ export class DishMongoRepository implements IDishRepository {
         try {
             const existingDish = await this.dishModel.findOne({ id });
             if (!existingDish) {
-                this.logger.warn(`Intento de eliminar plato inexistente con ID: ${id}`);
+                this.logger.warn(errorMessagesDish.findByIdNotFound(id));
                 return false;
             };
 
             await this.dishModel.deleteOne({ id }).exec();
-            this.logger.log(`Plato eliminado exitosamente con ID: ${id}`);
+            this.logger.log(errorMessagesDish.deleteSuccess(id));
             return true;
         }catch (error){
-            this.logger.error(`Error al eliminar el plato: ${id}`, error?.stack);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesDish.deleteError(id, error.message));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         };
     };
 }
