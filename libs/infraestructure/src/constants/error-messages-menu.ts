@@ -1,0 +1,17 @@
+export const errorMessagesMenu = {
+    createError: (error: string) => `Error al crear el menú: ${error}`,
+    findByIdNotFound: (id: string) => `Menú con el ID ${id} no encontrado`,
+    findByIdMissingPlates: (plates: string) => `Faltan los platos asociados a los IDs: ${plates}`,
+    findByIdSuccess: (id: string) => `Menú encontrado con ID: ${id}`,
+    findByIdError: (id: string, error: string) => `Error al buscar el menú por ID ${id}: ${error}`,
+    findByDateNotFound: (date: Date) => `Menú para la fecha ${date.toISOString()} no encontrado`,
+    findByDateSuccess: (id: string, date: string) => `Menú encontrado con ID: ${id} para la fecha ${date}`,
+    findByDateError: (error: string) => `Error al buscar el menú por fecha: ${error}`,
+    getCurrentMenuError: (error: string) => `Error al obtener el menú actual: ${error}`,
+    updateCurrentMenuSuccess: (id: string, date: string) => `Menú actualizado exitosamente con ID: ${id} para la fecha ${date}`,
+    updateCurrentMenuError: (error: string) => `Error al actualizar el menú actual: ${error}`,
+    deleteSuccess: (id: string) => `Menú eliminado exitosamente con ID: ${id}`,
+    deleteError: (id: string, error: string) => `Error al eliminar el menú con ID: ${id}: ${error}`,
+    
+    getCurrentMenuNotFound: 'No se encontró el menú actual',
+}

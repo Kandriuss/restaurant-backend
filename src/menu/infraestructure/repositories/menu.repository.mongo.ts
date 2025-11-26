@@ -9,6 +9,7 @@ import { Menus } from "libs/domain/src/models";
 import { v4 as uuidv4 } from 'uuid';
 import { IFullMenu } from "src/menu/domain/interface/full-menu.interface";
 import { IMenuPatch } from "src/menu/domain";
+import { errorMessagesMenu, errorMessagesCode } from "libs/infraestructure/src";
 
 const COLLECTION_NAME = 'menus';
 const DISH_COLLECTION_NAME = 'dishes';
@@ -28,8 +29,8 @@ export class MenuMongoRepository implements IMenuRepository {
             await newMenu.save();
             return newMenu as unknown as IMenu;
         } catch (error) {
-            this.logger.error(`Error al crear el menú`, error.stack);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesMenu.createError(error.message));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         }
     }
 
@@ -76,7 +77,7 @@ export class MenuMongoRepository implements IMenuRepository {
             const [menu] = await this.menuModel.aggregate<AggregatedMenu>(pipeline).exec();
 
             if (!menu) {
-                this.logger.warn(`No se encontró menú con ID: ${id}`);
+                this.logger.warn(errorMessagesMenu.findByIdNotFound(id));
                 return null;
             }
 
@@ -86,18 +87,18 @@ export class MenuMongoRepository implements IMenuRepository {
                 );
                 if (missingPlates.length) {
                     this.logger.warn(
-                        `Faltan los platos asociados a los IDs: ${missingPlates.join(', ')}`,
+                        errorMessagesMenu.findByIdMissingPlates(missingPlates.join(', ')),
                     );
                 }
             }
 
-            this.logger.log(`Menú encontrado con ID: ${menu.id}`);
+            this.logger.log(errorMessagesMenu.findByIdSuccess(menu.id));
 
             const { plateIds: _, ...menuWithoutIds } = menu;
             return menuWithoutIds;
         } catch (error) {
-            this.logger.error(`Error al buscar el menú por ID`, error.stack);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesMenu.findByIdError(id, error.message));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         }
     }
 
@@ -156,7 +157,7 @@ export class MenuMongoRepository implements IMenuRepository {
             const [menu] = await this.menuModel.aggregate<AggregatedMenu>(pipeline).exec();
 
             if (!menu) {
-                this.logger.warn(`No se encontró menú para la fecha ${startOfDay.toISOString()}`);
+                this.logger.warn(errorMessagesMenu.findByDateNotFound(new Date(startOfDay.toISOString())));
                 return null;
             };
 
@@ -165,17 +166,17 @@ export class MenuMongoRepository implements IMenuRepository {
                     (plateId) => !menu.plate.some((dish) => dish.id === plateId),
                 );
                 this.logger.warn(
-                    `No se encontraron los platos asociados a los IDs: ${missingPlates.join(', ')}`,
+                    errorMessagesMenu.findByIdMissingPlates(missingPlates.join(', ')),
                 );
             };
 
-            this.logger.log(`Menú encontrado con ID: ${menu.id} para la fecha ${menu.date.toISOString()}`);
+            this.logger.log(errorMessagesMenu.findByDateSuccess(menu.id, menu.date.toISOString()));
 
             const { plateIds: _, ...menuWithoutIds } = menu;
             return menuWithoutIds;
         } catch (error) {
-            this.logger.error(`Error al buscar menú por fecha`, error.stack);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesMenu.findByDateError(error.message));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         }
     }
     async getCurrentMenu(): Promise<IFullMenu | null> {
@@ -219,8 +220,8 @@ export class MenuMongoRepository implements IMenuRepository {
     
             return menu ?? null;
         } catch (error) {
-            this.logger.error('Error al obtener menú actual', error.stack);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesMenu.getCurrentMenuError(error.message));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         }
     }
     
@@ -229,17 +230,17 @@ export class MenuMongoRepository implements IMenuRepository {
             const currentMenu = await this.menuModel.findOne({ isCurrent: true }).exec();
     
             if (!currentMenu) {
-                this.logger.warn('No se encontró menú actual');
+                this.logger.warn(errorMessagesMenu.getCurrentMenuNotFound);
                 return null; 
             };
     
             Object.assign(currentMenu, menu);
             const updated = await currentMenu.save();
-            this.logger.log(`Menú actualizado exitosamente con ID: ${updated.id} para la fecha ${updated.date.toISOString()}`);
+            this.logger.log(errorMessagesMenu.updateCurrentMenuSuccess(updated.id, updated.date.toISOString()));
             return updated as unknown as IMenuPatch;
         } catch (error) {
-            this.logger.error('Error al actualizar el menú actual', error.stack);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesMenu.updateCurrentMenuError(error.message));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         }
     }
     
@@ -248,14 +249,14 @@ export class MenuMongoRepository implements IMenuRepository {
         try {
             const result = await this.menuModel.deleteOne({ id }).exec();
             if (result.deletedCount === 0) {
-                this.logger.warn(`Intento de eliminar menú inexistente con ID: ${id}`);
+                this.logger.warn(errorMessagesMenu.findByIdNotFound(id));
                 return false;
             }
-            this.logger.log(`Menú eliminado exitosamente con ID: ${id}`);
+            this.logger.log(errorMessagesMenu.deleteSuccess(id));
             return true;
         } catch (error) {
-            this.logger.error(`Error al eliminar el menú con ID: ${id}`, error.stack);
-            throw new Error('DATABASE_ERROR');
+            this.logger.error(errorMessagesMenu.deleteError(id, error.message));
+            throw new Error(errorMessagesCode.DATABASE_ERROR);
         };
     }
 }

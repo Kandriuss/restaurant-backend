@@ -10,6 +10,8 @@ import type { IMenuRepository } from './domain';
 import type { IDishRepository } from 'src/dish/domain';
 import { IFullMenu } from './domain/interface/full-menu.interface';
 import { IMenuPatch } from './domain';
+import { errorMessagesMenu , errorMessagesDish, errorMessagesCode, errorMessagesGlobal } from 'libs/infraestructure/src';
+
 
 @Injectable()
 export class MenuService {
@@ -27,47 +29,47 @@ export class MenuService {
             for (const plateId of menu.plate) {
                 const dish = await this.dishRepository.findById(plateId);
                 if (!dish) {
-                    this.logger.warn(`Plato no encontrado: ${plateId}`);
-                    throw new BadRequestException(`Plato con ID ${plateId} no encontrado`);
+                    this.logger.warn( errorMessagesDish.findByIdNotFound(plateId) );
+                    throw new BadRequestException( errorMessagesDish.findByIdNotFound(plateId) );
                 }
             }
 
             const existingMenu = await this.menuRepository.findByDate(menu.date);
             if (existingMenu) {
-                this.logger.warn(`Menú ya existe para la fecha: ${menu.date}`);
-                throw new BadRequestException(`Ya existe un menú para la fecha ${menu.date.toISOString().slice(0, 10)}`);
+                this.logger.warn( errorMessagesMenu.findByDateNotFound(menu.date) );
+                throw new BadRequestException( errorMessagesMenu.createDateDuplicate(menu.date) );
             }
 
             const newMenu = await this.menuRepository.create(menu);
-            this.logger.log(`Menú creado exitosamente con ID: ${newMenu.id}`);
+            this.logger.log( errorMessagesMenu.createSuccess);
             return newMenu;
         } catch (error) {
             if (error instanceof BadRequestException) throw error;
-            if (error.message === 'DATABASE_ERROR') {
-                this.logger.error('Error de base de datos al crear el menú', error.stack);
-                throw new InternalServerErrorException('Error interno del servidor');
+            if (error.message === errorMessagesCode.DATABASE_ERROR) {
+                this.logger.error( errorMessagesMenu.createError(error.message) );
+                throw new InternalServerErrorException( errorMessagesGlobal.internalServerError );
             }
-            this.logger.error('Error inesperado al crear el menú', error.stack);
-            throw new InternalServerErrorException('Error interno del servidor');
+            this.logger.error( errorMessagesGlobal.unexpectedError, error.stack );
+            throw new InternalServerErrorException( errorMessagesGlobal.internalServerError );   
         }
     }
 
     async getCurrentMenu(): Promise<IFullMenu> {
         try {
             const menu = await this.menuRepository.getCurrentMenu();
-            if (!menu) { throw new NotFoundException(`No se encontró menú actual`)};
+            if (!menu) { throw new NotFoundException( errorMessagesMenu.getCurrentMenuNotFound )};
 
-            this.logger.log(`Menú actual encontrado exitosamente`);
+            this.logger.log( errorMessagesMenu.getCurrentMenuSuccess);
             return menu as unknown as IFullMenu;
         } catch (error) {
             if (error instanceof NotFoundException) throw error;
 
-            if (error.message === 'DATABASE_ERROR') { 
-                throw new InternalServerErrorException('Error interno del servidor')
+            if (error.message === errorMessagesCode.DATABASE_ERROR) { 
+                throw new InternalServerErrorException( errorMessagesGlobal.internalServerError )
             };
 
-            this.logger.error(`Error inesperado al buscar el menú actual`, error.stack);
-            throw new InternalServerErrorException('Error interno del servidor');
+            this.logger.error( errorMessagesGlobal.unexpectedError, error.stack );
+            throw new InternalServerErrorException( errorMessagesGlobal.internalServerError );
         }
     }
 
@@ -76,20 +78,20 @@ export class MenuService {
             const updated = await this.menuRepository.updateCurrentMenu(menu);
     
             if (!updated) {
-                throw new NotFoundException('No existe un menú actual para actualizar');
+                throw new NotFoundException( errorMessagesMenu.NotFoundException );
             };
     
-            this.logger.log('Menú actual actualizado correctamente');
+            this.logger.log( errorMessagesMenu.updateSuccess );   
             return updated;
         } catch (error) {
             if (error instanceof NotFoundException) throw error;
     
-            if (error.message === 'DATABASE_ERROR') {
-                throw new InternalServerErrorException('Error interno del servidor');
+            if (error.message === errorMessagesCode.DATABASE_ERROR) {
+                throw new InternalServerErrorException( errorMessagesGlobal.internalServerError );
             };
     
-            this.logger.error('Error inesperado al actualizar menú actual', error.stack);
-            throw new InternalServerErrorException('Error interno del servidor');
+            this.logger.error( errorMessagesGlobal.unexpectedError, error.stack );
+            throw new InternalServerErrorException( errorMessagesGlobal.internalServerError );
         }
     }
     
@@ -104,26 +106,26 @@ export class MenuService {
             return menu;
         } catch (error) {
             if (error instanceof NotFoundException) throw error;
-            if (error.message === 'DATABASE_ERROR') {
-                this.logger.error(`Error de base de datos al buscar el menú por fecha`, error.stack);
-                throw new InternalServerErrorException('Error interno del servidor');
+            if (error.message === errorMessagesCode.DATABASE_ERROR) {   
+                this.logger.error( errorMessagesGlobal.databaseError, error.stack );   
+                throw new InternalServerErrorException( errorMessagesGlobal.internalServerError );
             }
-            this.logger.error(`Error inesperado al buscar el menú por fecha`, error.stack);
-            throw new InternalServerErrorException('Error interno del servidor');
+            this.logger.error( errorMessagesGlobal.unexpectedError, error.stack );
+            throw new InternalServerErrorException( errorMessagesGlobal.internalServerError );
         }
     }
 
     async delete(id: string): Promise<{ message: string }> {
         try {
             const deleted = await this.menuRepository.delete(id);
-            if (!deleted) { throw new NotFoundException(`Menú con ID ${id} no encontrado`)};
-            this.logger.log(`Menú eliminado exitosamente con ID: ${id}`);
-            return { message: 'Menú eliminado exitosamente' };
+            if (!deleted) { throw new NotFoundException( errorMessagesMenu.findByIdNotFound(id) )};
+            this.logger.log( errorMessagesMenu.deleteSuccess(id) );
+            return { message: errorMessagesMenu.deleteSuccess(id) };
         } catch (error) {
             if (error instanceof NotFoundException) throw error;
-            if (error.message === 'DATABASE_ERROR') { throw new InternalServerErrorException('Error interno del servidor')};
-            this.logger.error(`Error inesperado al eliminar el menú con ID: ${id}`, error.stack);
-            throw new InternalServerErrorException('Error interno del servidor');
+            if (error.message === errorMessagesCode.DATABASE_ERROR) { throw new InternalServerErrorException( errorMessagesGlobal.internalServerError )};
+            this.logger.error( errorMessagesGlobal.unexpectedError, error.stack );
+            throw new InternalServerErrorException( errorMessagesGlobal.internalServerError );
         }
     }
 }
