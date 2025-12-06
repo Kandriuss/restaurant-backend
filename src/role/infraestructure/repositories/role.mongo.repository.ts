@@ -23,7 +23,7 @@ export class RoleMongoRepository implements IRoleRespository {
           const existingRole = await this.roleModel.findOne({ code: role.code });
     
           if (existingRole) {
-            this.logger.warn(errorMessagesRole.CodeDuplicate(role.code));
+            this.logger.warn(errorMessagesGlobal.codeDuplicate(role.code));
             throw new Error(errorMessagesCode.ROLE_CODE_ALREADY_EXISTS);
           }
     
@@ -96,7 +96,7 @@ export class RoleMongoRepository implements IRoleRespository {
             if (role.code && role.code !== existingRole.code) {
                 const duplicateCode = await this.roleModel.findOne({ code: role.code });
                 if (duplicateCode) {
-                this.logger.warn(errorMessagesRole.CodeDuplicate(role.code));
+                this.logger.warn(errorMessagesGlobal.codeDuplicate(role.code));
                 throw new Error(errorMessagesCode.ROLE_CODE_ALREADY_EXISTS);
                 };
             };

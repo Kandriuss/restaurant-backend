@@ -17,7 +17,7 @@ export class RoleService {
         try {
             const existingRole = await this.roleRepository.findByCode(role.code);
 
-            if (existingRole) throw new BadRequestException(errorMessagesRole.CodeDuplicate(role.code));
+            if (existingRole) throw new BadRequestException(errorMessagesGlobal.codeDuplicate(role.code));
         
             const newRole = await this.roleRepository.create(role);
 
@@ -100,8 +100,8 @@ export class RoleService {
             return updatedRole as IRole;
         } catch (error) {
             if (error.message === errorMessagesCode.ROLE_CODE_ALREADY_EXISTS) {
-                this.logger.warn(errorMessagesRole.CodeDuplicate(role.code as string));
-                throw new BadRequestException(errorMessagesRole.CodeDuplicate(role.code as string));
+                this.logger.warn(errorMessagesGlobal.codeDuplicate(role.code as string));
+                throw new BadRequestException(errorMessagesGlobal.codeDuplicate(role.code as string));
             };
 
             if (error.message === errorMessagesCode.DATABASE_ERROR) {

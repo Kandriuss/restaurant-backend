@@ -6,4 +6,6 @@ export const errorMessagesGlobal = {
     unknown: 'desconocido',
     databaseError: 'Error de base de datos',
     unexpectedError: 'Error inesperado',
+
+    codeDuplicate: (code: string) =>  `El código ${code} ya existe`,
 }

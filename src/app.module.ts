@@ -9,6 +9,8 @@ import { UserModule } from 'src/user/user.module';
 import { RoleModule } from 'src/role/role.module';
 import { DishModule } from 'src/dish/dish.module';
 import { MenuModule } from './menu/menu.module';
+import { CategoryController } from './category/category.controller';
+import { CategoryModule } from './category/category.module';
 
 @Module({
   imports: [
@@ -26,8 +28,9 @@ import { MenuModule } from './menu/menu.module';
     UserModule,
     DishModule,
     MenuModule,
+    CategoryModule,
   ],
-  controllers: [],
+  controllers: [CategoryController],
   providers: [],
 })
 export class AppModule {}
