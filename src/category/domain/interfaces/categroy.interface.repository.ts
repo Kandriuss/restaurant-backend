@@ -4,9 +4,9 @@ import { IPatchCategory } from "./patch-category.interface"
 
 export interface ICategoryRepository {
     create(category: CategoryInput): Promise<ICategory>
-    // findAll(): Promise<ICategory[]>
-    // findById(id: string): Promise<ICategory | null>
-    // findByCode(code: string): Promise<ICategory | null>
-    // update(id: string, category: PatchCategoryInput): Promise<IPatchCategory | null>
+    findAll(): Promise<ICategory[]>
+    findById(id: string): Promise<ICategory | null>
+    findByCode(code: string): Promise<ICategory | null>
+    update(id: string, category: PatchCategoryInput): Promise<IPatchCategory | null>
     // delete(id:string): Promise<boolean>
 }
