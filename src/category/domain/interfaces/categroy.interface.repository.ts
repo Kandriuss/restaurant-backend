@@ -8,5 +8,5 @@ export interface ICategoryRepository {
     findById(id: string): Promise<ICategory | null>
     findByCode(code: string): Promise<ICategory | null>
     update(id: string, category: PatchCategoryInput): Promise<IPatchCategory | null>
-    // delete(id:string): Promise<boolean>
+    delete(id:string): Promise<boolean>
 }

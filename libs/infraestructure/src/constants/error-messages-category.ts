@@ -13,4 +13,7 @@ export const errorMessagesCategory = {
     updateError: (id: string, error: string) => `Error al actualizar la categoría con ID: ${id}: ${error}`,
     deleteSuccess: (id: string) => `Categoría eliminada exitosamente con ID: ${id}`,
     deleteError: (id: string, error: string) => `Error al eliminar la categoría con ID: ${id}: ${error}`,
+
+    createCategorySuccess: 'Categoría creada exitosamente',
+    deleteCategorySuccess: 'Categoría eliminada exitosamente',
 }

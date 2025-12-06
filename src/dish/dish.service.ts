@@ -20,7 +20,7 @@ export class DishService {
         this.logger.log(errorMessagesDish.createDishSuccess);
         return createdDish as IDish;
       } catch (error) {
-        if (error.message === errorMessagesCode.DUPLICATE_ENTRY) {
+        if (error.message === errorMessagesCode) {
           this.logger.warn(errorMessagesDish.createNameDuplicate(dish.name));
           throw new ConflictException(errorMessagesDish.createNameDuplicate(dish.name));
         };
